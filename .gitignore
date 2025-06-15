@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+
+# Conda
+.env
+*.env
+*.sqlite
+.ipynb_checkpoints
+
+# Folders
+venv/
+data/

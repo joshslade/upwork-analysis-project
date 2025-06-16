@@ -40,14 +40,14 @@ def _flatten_record(record: Dict[str, Any]) -> Dict[str, Any]:
     safe, defensive default. Unknown keys pass through untouched for now.
     """
     return {
-        "job_id": record.get("id"),
+        "job_id": record.get("uid"),
         "title": record.get("title"),
-        "buyer_country": (record.get("buyer") or {}).get("country"),
-        "budget": record.get("budget", {}).get("amount"),
-        "currency": record.get("budget", {}).get("currency") or "USD",
-        "url": f"https://www.upwork.com/jobs/{record.get('slug')}" if record.get("slug") else None,
+        "client_country": record.get("client", {}).get("location",{}).get("country"),
+        "budget": record.get("amount", {}).get("amount"),
+        "currency": record.get("amount", {}).get("currencyCode") or "USD",
+        "url": f"https://www.upwork.com/jobs/{record.get('ciphertext')}" if record.get("ciphertext") else None,
         # Add more mappings as needed ↓
-        **{k: v for k, v in record.items() if k not in {"id", "title", "buyer", "budget", "slug"}},
+        **{k: v for k, v in record.items() if k not in {"uid", "title", "client", "amount", "slug"}},
     }
 
 
@@ -75,7 +75,7 @@ def _load_json_files(path: Path) -> List[Dict[str, Any]]:
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Combine per‑page JSON into a single dataframe.")
     parser.add_argument("--input", default="data/processed/json", help="Directory with extracted JSON files.")
-    parser.add_argument("--out", default="data/processed/combined.parquet", help="Output file (parquet or csv).")
+    parser.add_argument("--out", default="data/processed/combined.csv", help="Output file (parquet or csv).")
     args = parser.parse_args(argv)
 
     src_dir = Path(args.input)

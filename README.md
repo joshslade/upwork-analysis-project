@@ -36,6 +36,8 @@ upwork_scraper_airtable/
 ├── data/
 │   ├── raw_html/              # Manual downloads (HTML files)
 │   └── processed/             # Extracted JSON & parquet/CSV
+├── docs/
+│   └── walkthrough.md         # Guide on how to use the tool
 ├── notebooks/                 # Exploration & visual checks
 │   └── exploration.ipynb
 ├── src/

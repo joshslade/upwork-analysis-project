@@ -24,6 +24,18 @@ flowchart TD
     Step5 --> Step6[Delete HTML files]
 ```
 
+```mermaid
+graph TD
+    A[Upwork HTML Downloads] --> B[extract_jobs.py]
+    B --> C[process_jobs.py]
+    C --> D[Airtable Push: Top N rows]
+    C --> E[Supabase Archive: All rows]
+
+    D --> F[Review in Airtable UI]
+    F -->|Tag as Rejected| G[Move to Supabase]
+    F -->|Tag as Keep| H[Track progress]
+```
+
 ---
 
 ## 🗂️ Project & File Structure
@@ -47,8 +59,13 @@ upwork_scraper_airtable/
 │   ├── process_jobs.py        # Combine & clean data
 │   ├── airtable/
 │   │   ├── __init__.py
+│   │   ├── archive.py         # archives flagged records from Airtable
 │   │   └── push.py            # Upload dataframe to Airtable
+│   ├── supabase/
+│   │   ├── __init__.py
+│   │   └── push.py            # Upload dataframe to Supabase
 │   └── utils/
+│       ├── __init__.py
 │       └── logger.py
 └── tests/
     ├── test_extract.py
@@ -65,6 +82,7 @@ upwork_scraper_airtable/
 | Headless browser | Playwright                         | Fast, modern, handles JS (Nuxt) pages  |
 | Parsing          | `json`, `pandas`                   | Lightweight transform & analysis       |
 | Storage          | Airtable (REST / `pyairtable`)     | No‑code visualisation & Kanban tagging |
+| Archive Storage  | supabase                           | long term storage of job records       |
 | Dev‑Ops          | GitHub + GitHub Actions (optional) | Version control & scheduled CI runs    |
 
 ---
@@ -78,22 +96,27 @@ upwork_scraper_airtable/
 | 2     | `extract_jobs.py` Playwright prototype    |  T + 3 days |
 | 3     | Data merge & cleaning to single dataframe |  T + 5 days |
 | 4     | Airtable schema & `push.py` integration   |  T + 6 days |
-| 5     | End‑to‑end smoke test & logging           |  T + 7 days |
-| 6     | README & wiki refinements                 |  T + 8 days |
+| 5     | Supabase schema & `push.py` integration   |  T + 7 days |
+| 6     | Airtable archive workflow                 |  T + 8 days |
+| 7     | End‑to‑end smoke test & logging           |  T + 9 days |
+| 8     | README & wiki refinements                 |  T + 10 days |
 
 ---
 
 ## ✅ Todo Checklist
 
-- [ ] Initialise Git repo & push to GitHub
-- [ ] Create Conda environment (`environment.yml`)
-- [ ] Draft `.gitignore` & `.env.example`
+- [x] Initialise Git repo & push to GitHub
+- [x] Create Conda environment (`environment.yml`)
+- [x] Draft `.gitignore` & `.env.example`
 - [ ] Document saved‑search URLs
-- [ ] Prototype `extract_jobs.py` with Playwright
-- [ ] Extract JSON and save per‑page files
-- [ ] Build `process_jobs.py` to combine JSON ➜ DataFrame
-- [ ] Design Airtable base & fields
+- [x] Prototype `extract_jobs.py` with Playwright
+- [x] Extract JSON and save per‑page files
+- [x] Build `process_jobs.py` to combine JSON ➜ DataFrame
+- [-] Design Airtable base & fields
 - [ ] Implement `airtable/push.py`
+- [ ] Design Supabase base & fields
+- [ ] Implement `supabase/push.py`
+- [ ] Develop workflow and archive automations `airtable/archive.py`
 - [ ] Write unit tests (`tests/`)
 - [ ] Run first full workflow & verify Airtable rows
 - [ ] Automate cleanup of HTML files

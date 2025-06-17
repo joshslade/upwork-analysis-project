@@ -33,6 +33,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from pyairtable import Api, Table
 from pyairtable.formulas import match
+import json
 
 load_dotenv()
 
@@ -43,6 +44,16 @@ logging.basicConfig(
 )
 LOGGER = logging.getLogger(__name__)
 
+# ---------------------------------------------------
+# interactive window dev code
+# ---------------------------------------------------
+base_id = os.getenv("AIRTABLE_BASE_ID")
+table_id = os.getenv("AIRTABLE_TABLE_ID")
+api_key = os.getenv("AIRTABLE_API_KEY")
+table_name = 'jobs'
+
+api = Api(api_key)
+table = api.table(base_id, table_name)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -55,7 +66,7 @@ def _connect_to_table(base_id: str, table_name: str, api_key: str | None = None)
         LOGGER.error("Missing AIRTABLE_API_KEY or AIRTABLE_BASE_ID env vars.")
         sys.exit(1)
     api = Api(api_key)
-    return api.table(base_id, table_name)
+    return api.table(base_id, table_id)
 
 
 def _split_into_batches(records: List[Dict[str, object]], batch_size: int = 10):
@@ -69,6 +80,21 @@ def _record_exists(table: Table, job_id: str) -> bool:
     formula = match({"job_id": job_id})
     return bool(table.all(formula=formula, max_records=1))
 
+def get_or_create_skills_table(api, base_id):
+    return api.table(base_id, "skills")
+
+def get_skill_ids(skills_table, skill_names):
+    """Ensure all skills exist and return their Airtable record IDs."""
+    existing = {rec['fields']['Name']: rec['id'] for rec in skills_table.all()}
+    ids = []
+    for name in skill_names:
+        if name in existing:
+            ids.append(existing[name])
+        else:
+            rec = skills_table.create({"Name": name})
+            ids.append(rec['id'])
+    return ids
+
 
 # ---------------------------------------------------------------------------
 # CLI
@@ -76,9 +102,9 @@ def _record_exists(table: Table, job_id: str) -> bool:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Push Upwork job data to Airtable.")
-    parser.add_argument("--input", default="data/processed/combined.parquet", help="Parquet or CSV file to load.")
-    parser.add_argument("--table", default="Jobs", help="Airtable table name.")
-    parser.add_argument("--check-dupes", action="store_true", help="Skip rows that already exist (job_id).")
+    parser.add_argument("--input", default="data/processed/combined.json", help="Parquet or CSV file to load.")
+    parser.add_argument("--table", default="jobs", help="Airtable table name.")
+    parser.add_argument("--check-dupes", default= True, action="store_true", help="Skip rows that already exist (job_id).")
     parser.add_argument("--batch", type=int, default=10, help="Records per batch (≤10).")
 
     args = parser.parse_args(argv)
@@ -90,22 +116,28 @@ def main(argv: list[str] | None = None) -> None:
         sys.exit(1)
 
     table = _connect_to_table(base_id, args.table, api_key)
+    skills_table = get_or_create_skills_table(api, base_id)
 
     # Load dataframe
     input_path = Path(args.input)
+    # input_path = Path('../../data/processed/combined.json')
     if not input_path.exists():
         LOGGER.error("Input file %s does not exist.", input_path)
         sys.exit(1)
 
-    if input_path.suffix == ".csv":
-        df = pd.read_csv(input_path)
-    else:
-        df = pd.read_parquet(input_path)
+    if input_path.suffix in (".csv",".parquet"):
+        if input_path.suffix == ".csv":
+            df = pd.read_csv(input_path)
+        else:
+            df = pd.read_parquet(input_path)
+        records = df.to_dict(orient="records")
+
+    elif input_path.suffix == ".json":
+        with open(input_path, "r", encoding="utf-8") as f:
+            records = json.load(f)
+        df = pd.DataFrame(records)
 
     LOGGER.info("Loaded %d rows from %s", len(df), input_path)
-
-    # Convert to airtable-friendly dicts
-    records = df.to_dict(orient="records")
 
     if args.check_dupes and "job_id" not in df.columns:
         LOGGER.warning("--check-dupes ignored – job_id column not present.")
@@ -113,9 +145,18 @@ def main(argv: list[str] | None = None) -> None:
     created = 0
     for batch in _split_into_batches(records, args.batch):
         if args.check_dupes:
+            batch_size = len(batch)
             batch = [r for r in batch if not _record_exists(table, str(r.get("job_id")))]
+            duplicates = batch_size - len(batch)
+            LOGGER.info("Identified %d duplicates, proceeding with %d records", duplicates, len(batch))
             if not batch:
                 continue
+        # Convert skill names to linked record IDs
+        for rec in batch:
+            skill_names = rec.get("skills", [])
+            if skill_names:
+                rec["skills"] = get_skill_ids(skills_table, skill_names)
+    
         try:
             table.batch_create(batch)
             created += len(batch)

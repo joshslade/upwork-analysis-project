@@ -59,6 +59,12 @@ def _flatten_record(record: Dict[str, Any]) -> Dict[str, Any]:
     attrs = record.get("attrs", [])
     pretty_names = [a.get("prettyName") for a in attrs if isinstance(a, dict) and "prettyName" in a]
 
+    def safe_float(val):
+        try:
+            return float(val)
+        except (TypeError, ValueError):
+            return None
+
     return {
         "job_id": record.get("uid"),
         "title": strip_html(record.get("title")),
@@ -67,18 +73,19 @@ def _flatten_record(record: Dict[str, Any]) -> Dict[str, Any]:
         "proposalsTier": after_last_dot(record.get("proposalsTier")),
         "tierText": between_underscores(record.get("tierText")),
         "client_country": record.get("client", {}).get("location",{}).get("country"),
-        "client_totalSpent": record.get("client", {}).get("totalSpent"),
+        "client_totalSpent": safe_float(record.get("client", {}).get("totalSpent")),
         "client_payVerified": record.get("client", {}).get("isPaymentVerified"),
         "client_reviews": record.get("client", {}).get("totalReviews"),
         "client_feedback": record.get("client", {}).get("totalFeedback"),
         "fixed_budget": record.get("amount", {}).get("amount"),
+        "weekly_budget": record.get("weeklyBudget", {}).get("amount"),
         "hourly_budget_min": record.get("hourlyBudget", {}).get("min"),
         "hourly_budget_max": record.get("hourlyBudget", {}).get("max"),
         "currency": record.get("amount", {}).get("currencyCode") or "USD",
         "skills" : pretty_names,
         "url": f"https://www.upwork.com/jobs/{record.get('ciphertext')}" if record.get("ciphertext") else None,
         # Add more mappings as needed ↓
-        **{k: v for k, v in record.items() if k not in {"uid", "title", "description","client","engagement","proposalsTier","tierText","amount","hourlyBudget","attrs"}},
+        **{k: v for k, v in record.items() if k not in {"uid", "title", "description","client","engagement","proposalsTier","tierText","amount","hourlyBudget","attrs","weeklyBudget","isSTSVectorSearchResult","relevanceEncoded"}},
     }
 
 # TODO: implement more complex parsing from the jobs dictionary
@@ -117,7 +124,7 @@ def _load_json_files(path: Path) -> List[Dict[str, Any]]:
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Combine per‑page JSON into a single dataframe.")
     parser.add_argument("--input", default="data/processed/json", help="Directory with extracted JSON files.")
-    parser.add_argument("--out", default="data/processed/combined.csv", help="Output file (parquet or csv).")
+    parser.add_argument("--out", default="data/processed/combined.json", help="Output file (parquet or csv).")
     args = parser.parse_args(argv)
 
     src_dir = Path(args.input)
@@ -146,8 +153,11 @@ def main(argv: list[str] | None = None) -> None:
 
     if out_path.suffix == ".csv":
         df.to_csv(out_path, index=False)
-    else:
+    elif out_path.suffix == ".parquet":
         df.to_parquet(out_path, index=False)
+    else:
+        df.to_json(out_path, index=False, orient='records',force_ascii=False, indent=2)
+
 
     LOGGER.info("✓ Wrote %d unique jobs → %s", len(df), out_path)
 

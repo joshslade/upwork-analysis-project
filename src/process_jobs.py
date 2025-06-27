@@ -55,49 +55,80 @@ def _flatten_record(record: Dict[str, Any]) -> Dict[str, Any]:
         parts = s.split('_')
         return parts[1] if len(parts) > 2 else s
     
-    # Extract prettyName from attrs list
-    attrs = record.get("attrs", [])
-    pretty_names = [a.get("prettyName") for a in attrs if isinstance(a, dict) and "prettyName" in a]
 
     def safe_float(val):
         try:
             return float(val)
         except (TypeError, ValueError):
             return None
+        
+    def get_job_type(value: int) -> str | None:
+        """
+        Translates an integer value (1 or 2) to its corresponding job type string.
+
+        Args:
+            value: An integer, expected to be 1 for 'fixed' or 2 for 'hourly'.
+
+        Returns:
+            'fixed' if value is 1, 'hourly' if value is 2,
+            otherwise None if the value is not recognized.
+        """
+        job_type_map = {
+            1: "fixed",
+            2: "hourly"
+        }
+        return job_type_map.get(value)
+
+    # Extract prettyName from attrs list
+    attrs = record.get("attrs", [])
+    skill_names = [a.get("prettyName") for a in attrs if isinstance(a, dict) and "prettyName" in a]
+    
+    # For hourly jobs, currency might be in hourlyBudget, not top-level amount
+    currency = (
+        record.get("amount", {}).get("currencyCode")
+        or record.get("hourlyBudget", {}).get("currencyCode")
+        or "USD"  # Fallback
+    )
 
     return {
+        # Job identifiers
         "job_id": record.get("uid"),
+        "url": f"https://www.upwork.com/jobs/{record.get('ciphertext')}" if record.get("ciphertext") else None,
+
+        # Job details
         "title": strip_html(record.get("title")),
         "description": strip_html(record.get("description")),
+        "skills": skill_names,
+        "created_on": record.get("createdOn"),
+        "published_on": record.get("publishedOn"),
+        "renewed_on": record.get("renewedOn"),
+        "duration_label": record.get("durationLabel"),
+        "connect_price": record.get("connectPrice"),
+
+        # Job classification & terms
+        "job_type": get_job_type(record.get("type")),
         "engagement": after_last_dot(record.get("engagement")),
-        "proposalsTier": after_last_dot(record.get("proposalsTier")),
-        "tierText": between_underscores(record.get("tierText")),
-        "client_country": record.get("client", {}).get("location",{}).get("country"),
-        "client_totalSpent": safe_float(record.get("client", {}).get("totalSpent")),
-        "client_payVerified": record.get("client", {}).get("isPaymentVerified"),
-        "client_reviews": record.get("client", {}).get("totalReviews"),
-        "client_feedback": record.get("client", {}).get("totalFeedback"),
+        "proposals_tier": after_last_dot(record.get("proposalsTier")),
+        "tier_text": between_underscores(record.get("tierText")),
+
+        # Budget details
         "fixed_budget": record.get("amount", {}).get("amount"),
         "weekly_budget": record.get("weeklyBudget", {}).get("amount"),
         "hourly_budget_min": record.get("hourlyBudget", {}).get("min"),
         "hourly_budget_max": record.get("hourlyBudget", {}).get("max"),
-        "currency": record.get("amount", {}).get("currencyCode") or "USD",
-        "skills" : pretty_names,
-        "url": f"https://www.upwork.com/jobs/{record.get('ciphertext')}" if record.get("ciphertext") else None,
-        # Add more mappings as needed ↓
-        **{k: v for k, v in record.items() if k not in {"uid", "title", "description","client","engagement","proposalsTier","tierText","amount","hourlyBudget","attrs","weeklyBudget","isSTSVectorSearchResult","relevanceEncoded"}},
+        "currency": currency,
+
+        # Client details
+        "client_country": record.get("client", {}).get("location", {}).get("country"),
+        "client_total_spent": safe_float(record.get("client", {}).get("totalSpent")),
+        "client_payment_verified": record.get("client", {}).get("isPaymentVerified"),
+        "client_total_reviews": record.get("client", {}).get("totalReviews"),
+        "client_avg_feedback": record.get("client", {}).get("totalFeedback"),
+
+        # Search metadata (previously discarded or passed via catch-all)
+        "is_sts_vector_search_result": record.get("isSTSVectorSearchResult"),
+        "relevance_encoded": record.get("relevanceEncoded"),
     }
-
-# TODO: implement more complex parsing from the jobs dictionary
-#   - [x] clean html tags in title and description
-#   - [x] engagement: extract suffix only
-#   - [x] tierText: extract expert/intermediate
-#   - [x] client: payment verified, totalSpent, totalReviews, totalFeedback etc
-#   - [x] proposalsTier: extract suffix only
-#   - [x] attrs: parse list of skills .get(prettyName)
-#   - [x] hourlyBudget: get min, get max
-
-
 
 
 def _load_json_files(path: Path) -> List[Dict[str, Any]]:

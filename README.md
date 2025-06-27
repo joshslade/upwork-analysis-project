@@ -112,8 +112,8 @@ upwork_scraper_airtable/
 - [x] Prototype `extract_jobs.py` with Playwright
 - [x] Extract JSON and save per‑page files
 - [x] Build `process_jobs.py` to combine JSON ➜ DataFrame
-- [-] Design Airtable base & fields
-- [ ] Implement `airtable/push.py`
+- [x] Design Airtable base & fields
+- [x] Implement `airtable/push.py`
 - [ ] Design Supabase base & fields
 - [ ] Implement `supabase/push.py`
 - [ ] Develop workflow and archive automations `airtable/archive.py`
@@ -147,3 +147,46 @@ python -m src.airtable.push
 Happy scraping — and may your Upwork feed finally feel like **your** feed!
 
 
+## High level operation data flows
+- Local System
+  - python scripts for
+    - Generating & opening URLs
+    - Extracting data from HTML downloads
+    - Processing data
+    - Uploading data to Supabase
+    - Maintaining Airtable
+- Upwork/WebScrapBook
+  - Download HTMLs
+- Airtable
+  - Lead tracker for New and Shortlisted Jobs
+  - Lead
+    - Shortlisted > Proposal > Interview > Contract > Complete
+    - Discarded
+- Notion?
+  - Deal tracker from proposal to deal
+- Supabase
+  - Long term storage
+    - Scrape requests - records each html file (query) that is saved
+      - Schema
+        - Search ID
+        - Query timestamp
+        - Upload timestamp
+        - Query
+        - Page
+        - filepath
+        - processed
+    - Jobs - record unique jobs
+      - Schema As per JSON @/Users/jslade/Documents/GitHub/upwork_scraper/data/processed/combined.json
+    - Search Results - records unique combination of Jobs and Search
+      - Schema
+        - SearchID
+        - JobID
+        - proposalsTier (Track the lifetime of a job on the platform and monitor proposals growth)
+
+### Workflow
+1. Generate & Open search URLS
+2. Save pages using WebScrapBook
+3. Process downloads - check searchID does not exist before proceeding
+4. Extract & process jobs
+5. Push jobs to supabase - UPSERT job_id, UPDATE search record with total jobs and new jobs
+6. Refresh Airtable with Updated jobs, archive the triaged jobs

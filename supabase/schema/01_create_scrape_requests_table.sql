@@ -1,7 +1,7 @@
 
 CREATE TABLE IF NOT EXISTS scrape_requests (
-    search_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    query_timestamp TIMESTAMPTZ DEFAULT now(),
+    search_id TEXT PRIMARY KEY,
+    query_timestamp TIMESTAMPTZ,
     upload_timestamp TIMESTAMPTZ,
     query TEXT,
     page INTEGER,

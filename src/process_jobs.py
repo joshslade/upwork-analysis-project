@@ -1,33 +1,42 @@
-"""process_jobs.py
-
-Merge individual JSON dumps produced by `extract_jobs.py` into a single
-analytics‑ready DataFrame. Optionally write Parquet/CSV and basic summary
-stats.
-
-Usage:
-
-    python -m src.process_jobs --input data/processed/json --out data/processed/combined.parquet
-
-"""
 from __future__ import annotations
 
 import argparse
 import json
 import logging
+import numpy as np
 import re
+import os
 from pathlib import Path
 from typing import Any, Dict, List
+from datetime import datetime
 
 import pandas as pd
 from dotenv import load_dotenv
+from supabase import create_client, Client
 
-load_dotenv()
+# Define the path to your project's root directory
+PROJECT_ROOT = Path("/Users/jslade/Documents/GitHub/upwork_scraper/")
+DOTENV_PATH = PROJECT_ROOT / ".env"
+
+# Explicitly load the .env file from the specified path
+load_dotenv(dotenv_path=DOTENV_PATH, override=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%H:%M:%S",
 )
 LOGGER = logging.getLogger(__name__)
+
+# Initialize Supabase client
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    LOGGER.error("Supabase URL and Key must be set in the .env file.")
+    raise SystemExit(1)
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 # ---------------------------------------------------------------------------
@@ -131,31 +140,83 @@ def _flatten_record(record: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _load_json_files(path: Path) -> List[Dict[str, Any]]:
-    """Read every *.json file in *path* and concatenate all job items."""
-    all_records: List[Dict[str, Any]] = []
-    for json_file in sorted(path.glob("*.json")):
-        with json_file.open(encoding="utf-8") as fh:
-            try:
-                data = json.load(fh)
-                if isinstance(data, list):
-                    all_records.extend(data)
-                else:  # Some pages may wrap jobs under key
-                    all_records.extend(data.get("jobs", []))
-                LOGGER.info("Loaded %-30s → %4d records", json_file.name, len(data))
-            except json.JSONDecodeError as exc:
-                LOGGER.warning("Bad JSON in %s: %s", json_file.name, exc)
-    return all_records
+def parse_filename_metadata(filepath: Path) -> Dict[str, Any]:
+    """Extracts searchID, query, and page from the filename.
+    Expected format: searchID-query-page.json
+    """
+    filename = filepath.name
+    match = re.match(r"(.*?)-(.*?)-page(\d+)\.json", filename)
+    if match:
+        return {
+            "search_id": match.group(1),
+            "query_timestamp": datetime.strptime(match.group(1),r'%Y%m%d%H%M%S%f'),  
+            "query": match.group(2),
+            "page": int(match.group(3)),
+        }
+    LOGGER.warning(f"Filename {filename} does not match expected pattern. Cannot extract metadata.")
+    return {"search_id": None, "query_timestamp": None, "query": None, "page": None}
+
+
+async def insert_scrape_request(search_id: str, query_timestamp: datetime, query: str, page: int, filepath: str) -> None:
+    """Inserts a new record into the scrape_requests table.
+    """
+    data = {
+        "search_id": search_id,
+        "query_timestamp": query_timestamp.isoformat(),
+        "query": query,
+        "page": page,
+        "filepath": filepath,
+        "processed": False,
+    }
+    try:
+        response = supabase.table('scrape_requests').upsert(data, on_conflict='search_id').execute()
+        LOGGER.info(f"Inserted scrape request for {search_id} (page {page}).")
+    except Exception as e:
+        LOGGER.error(f"Error inserting scrape request for {search_id}: {e}")
+        raise
+
+
+async def update_scrape_request_status(search_id: str, processed_status: bool) -> None:
+    """Updates the processed status and upload timestamp for a scrape request.
+    """
+    data = {
+        "processed": processed_status,
+        "upload_timestamp": datetime.now().isoformat(),
+    }
+    try:
+        response = supabase.table('scrape_requests').update(data).eq('search_id', search_id).execute()
+        LOGGER.info(f"Updated scrape request status for {search_id} to processed={processed_status}.")
+    except Exception as e:
+        LOGGER.error(f"Error updating scrape request status for {search_id}: {e}")
+        raise
+
+
+async def insert_search_results(search_id: str, job_ids: List[str], proposals_tiers: List[str]) -> None:
+    """Inserts multiple records into the search_results table.
+    """
+    records = []
+    for job_id, proposals_tier in zip(job_ids, proposals_tiers):
+        records.append({"search_id": search_id, "job_id": job_id, "proposals_tier": proposals_tier})
+    
+    if not records:
+        LOGGER.info(f"No search results to insert for search_id {search_id}.")
+        return
+
+    try:
+        response = supabase.table('search_results').upsert(records, on_conflict='search_id,job_id').execute()
+        LOGGER.info(f"Inserted {len(records)} search results for {search_id}.")
+    except Exception as e:
+        LOGGER.error(f"Error inserting search results for {search_id}: {e}")
+        raise
 
 
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
-def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(description="Combine per‑page JSON into a single dataframe.")
+async def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description="Process JSON files from a directory and push jobs to Supabase.")
     parser.add_argument("--input", default="data/processed/json", help="Directory with extracted JSON files.")
-    parser.add_argument("--out", default="data/processed/combined.json", help="Output file (parquet or csv).")
     args = parser.parse_args(argv)
 
     src_dir = Path(args.input)
@@ -163,35 +224,80 @@ def main(argv: list[str] | None = None) -> None:
         LOGGER.error("Input directory %s does not exist.", src_dir)
         raise SystemExit(1)
 
-    records = _load_json_files(src_dir)
-    if not records:
-        LOGGER.warning("No records found. Exiting.")
+    json_files = sorted(src_dir.glob("*.json"))
+    if not json_files:
+        LOGGER.warning("No JSON files found in %s. Exiting.", src_dir)
         return
 
-    flat_rows = [_flatten_record(r) for r in records]
-    df = pd.DataFrame(flat_rows)
+    for json_filepath in json_files:
+        LOGGER.info(f"Processing file: {json_filepath.name}")
+        try:
+            # 1. Extract metadata from JSON filename
+            metadata = parse_filename_metadata(json_filepath)
+            search_id = metadata["search_id"]
+            query_timestamp = metadata["query_timestamp"]
+            query = metadata["query"]
+            page = metadata["page"]
 
-    # Deduplicate by job_id (keep latest occurrence)
-    if "job_id" in df.columns:
-        df = (
-            df.sort_values("job_id")
-            .drop_duplicates(subset="job_id", keep="last")
-            .reset_index(drop=True)
-        )
+            if not search_id:
+                LOGGER.error(f"Could not extract search_id from JSON filename: {json_filepath.name}. Skipping.")
+                continue
 
-    out_path = Path(args.out)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
+            # 2. Insert scrape request record (initial state)
+            await insert_scrape_request(search_id, query_timestamp, query, page, str(json_filepath))
 
-    if out_path.suffix == ".csv":
-        df.to_csv(out_path, index=False)
-    elif out_path.suffix == ".parquet":
-        df.to_parquet(out_path, index=False)
-    else:
-        df.to_json(out_path, index=False, orient='records',force_ascii=False, indent=2)
+            # 3. Load JSON data from the current file
+            with json_filepath.open(encoding="utf-8") as fh:
+                records = json.load(fh)
+                if not isinstance(records, list):
+                    records = records.get("jobs", []) # Handle cases where jobs are nested
 
+            if not records:
+                LOGGER.warning(f"No job records found in {json_filepath.name}. Updating scrape request status to unprocessed.")
+                await update_scrape_request_status(search_id, False)
+                continue
 
-    LOGGER.info("✓ Wrote %d unique jobs → %s", len(df), out_path)
+            flat_rows = [_flatten_record(r) for r in records]
+            df = pd.DataFrame(flat_rows)
+
+            # Deduplicate by job_id (keep latest occurrence)
+            if "job_id" in df.columns:
+                df = (
+                    df.sort_values("job_id")
+                    .drop_duplicates(subset="job_id", keep="last")
+                    .reset_index(drop=True)
+                )
+
+            # 5. Push jobs to Supabase 'jobs' table
+            # Replace NaN values with None for JSON compliance
+       
+            jobs_to_push = df.replace({np.nan: None}).to_dict(orient='records')
+            
+            try:
+                response = supabase.table('jobs').upsert(jobs_to_push, on_conflict='job_id').execute()
+                LOGGER.info(f"Successfully pushed {len(response.data)} records from {json_filepath.name} to Supabase 'jobs' table.")
+            except Exception as e:
+                LOGGER.error(f"Error pushing jobs from {json_filepath.name} to Supabase: {e}. Updating scrape request status to unprocessed.")
+                await update_scrape_request_status(search_id, False)
+                continue # Move to next file
+
+            # 6. Push search results (job_id and proposals_tier) to Supabase 'search_results' table
+            job_ids = df["job_id"].tolist()
+            proposals_tiers = df["proposals_tier"].tolist()
+            await insert_search_results(search_id, job_ids, proposals_tiers)
+
+            # 7. Update scrape request status to processed
+            await update_scrape_request_status(search_id, True)
+
+            LOGGER.info(f"✓ Successfully processed and pushed all data from {json_filepath.name}.")
+
+        except Exception as e:
+            LOGGER.error(f"An unexpected error occurred while processing {json_filepath.name}: {e}")
+            # If an error occurs before scrape_request is inserted, we can't update it.
+            # If it occurs after, the previous error handling should catch it.
+            # This outer catch is for truly unexpected errors.
 
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main())

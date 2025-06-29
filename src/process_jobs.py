@@ -137,6 +137,7 @@ def _flatten_record(record: Dict[str, Any]) -> Dict[str, Any]:
         # Search metadata (previously discarded or passed via catch-all)
         "is_sts_vector_search_result": record.get("isSTSVectorSearchResult"),
         "relevance_encoded": record.get("relevanceEncoded"),
+        "is_applied": record.get("isApplied")
     }
 
 
@@ -191,12 +192,12 @@ async def update_scrape_request_status(search_id: str, processed_status: bool) -
         raise
 
 
-async def insert_search_results(search_id: str, job_ids: List[str], proposals_tiers: List[str]) -> None:
+async def insert_search_results(search_id: str, job_ids: List[str], proposals_tiers: List[str], is_applieds: List[bool]) -> None:
     """Inserts multiple records into the search_results table.
     """
     records = []
-    for job_id, proposals_tier in zip(job_ids, proposals_tiers):
-        records.append({"search_id": search_id, "job_id": job_id, "proposals_tier": proposals_tier})
+    for job_id, proposals_tier, is_applied in zip(job_ids, proposals_tiers, is_applieds):
+        records.append({"search_id": search_id, "job_id": job_id, "proposals_tier": proposals_tier, "is_applied": is_applied})
     
     if not records:
         LOGGER.info(f"No search results to insert for search_id {search_id}.")
@@ -284,7 +285,8 @@ async def main(argv: list[str] | None = None) -> None:
             # 6. Push search results (job_id and proposals_tier) to Supabase 'search_results' table
             job_ids = df["job_id"].tolist()
             proposals_tiers = df["proposals_tier"].tolist()
-            await insert_search_results(search_id, job_ids, proposals_tiers)
+            is_applieds = df["is_applied"].tolist()
+            await insert_search_results(search_id, job_ids, proposals_tiers, is_applieds)
 
             # 7. Update scrape request status to processed
             await update_scrape_request_status(search_id, True)

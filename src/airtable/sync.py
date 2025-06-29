@@ -173,18 +173,25 @@ def prioritize_jobs_for_sync(jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]
     return jobs
 
 
-def get_or_create_skill_record_ids(skill_names: List[str]) -> List[str]:
+def get_all_existing_skills_map() -> Dict[str, str]:
+    """Fetches all existing skills from Airtable and returns a name-to-ID map."""
+    LOGGER.info("Fetching all existing skills from Airtable...")
+    existing_skills_records = airtable_skills_table.all()
+    existing_skills_map = {
+        rec['fields']['Name']: rec['id']
+        for rec in existing_skills_records
+        if 'Name' in rec['fields']
+    }
+    LOGGER.info(f"Found {len(existing_skills_map)} existing skills.")
+    return existing_skills_map
+
+def get_or_create_skill_record_ids(skill_names: List[str], existing_skills_map: Dict[str, str]) -> List[str]:
     """Ensures skills exist in the 'skills' table and returns their record IDs."""
     if not skill_names:
         return []
 
     # Fetch all existing skills to minimize API calls
-    existing_skills_records = airtable_skills_table.all()
-    existing_skills_map = {
-        rec["fields"]["Name"]: rec["id"]
-        for rec in existing_skills_records
-        if "Name" in rec["fields"]
-    }
+    existing_skills_map = existing_skills_map
 
     skill_ids = []
     skills_to_create = []
@@ -194,37 +201,22 @@ def get_or_create_skill_record_ids(skill_names: List[str]) -> List[str]:
             skill_ids.append(existing_skills_map[name])
         else:
             # Collect skills to create in a batch
-            skills_to_create.append({"Name": name})
+            skills_to_create.append({'Name': name})
 
     if skills_to_create:
         try:
             created_records = airtable_skills_table.batch_create(skills_to_create)
-            LOGGER.info(
-                f"Created {len(created_records)} new skill records in Airtable."
-            )
+            LOGGER.info(f"Created {len(created_records)} new skill records in Airtable.")
             for rec in created_records:
-                skill_ids.append(rec["id"])
+                skill_ids.append(rec['id'])
         except Exception as e:
             LOGGER.error(f"Error creating new skill records: {e}")
 
     return skill_ids
 
 
-def format_records_for_airtable(jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def format_records_for_airtable(jobs: List[Dict[str, Any]], mapping: Dict[str, str], existing_skills_map: Dict[str, str]) -> List[Dict[str, Any]]:
     """Formats Supabase job data for the Airtable API using Field ID mapping."""
-    try:
-        with open(PROJECT_ROOT / "src/airtable/schema.json") as f:
-            schema = json.load(f)
-        # Create a mapping from supabase_source_column to airtable_field_name
-        mapping = {
-            field["supabase_source_column"]: field["name"]
-            for field in schema["fields"]
-            if field.get("supabase_source_column") and field.get("type") != "lastModifiedTime"
-        }
-    except FileNotFoundError:
-        LOGGER.error("schema.json not found. Cannot format records.")
-        return []
-
     formatted_records = []
     for job in jobs:
         airtable_fields = {}
@@ -233,16 +225,14 @@ def format_records_for_airtable(jobs: List[Dict[str, Any]]) -> List[Dict[str, An
                 # Handle skills separately: get or create skill records and use their IDs
                 skill_names = job.get(supabase_col, [])
                 if skill_names:
-                    skill_record_ids = get_or_create_skill_record_ids(skill_names)
+                    skill_record_ids = get_or_create_skill_record_ids(skill_names, existing_skills_map)
                     if skill_record_ids:
                         airtable_fields[airtable_name] = skill_record_ids
             elif supabase_col in job and job[supabase_col] is not None:
                 airtable_fields[airtable_name] = job[supabase_col]
         formatted_records.append({"fields": airtable_fields})
-
-    LOGGER.info(
-        f"Successfully formatted {len(formatted_records)} records for Airtable."
-    )
+    
+    LOGGER.info(f"Successfully formatted {len(formatted_records)} records for Airtable.")
     return formatted_records
 
 
@@ -286,9 +276,25 @@ def main():
     # 4. Prioritize jobs (placeholder)
     prioritized_jobs = prioritize_jobs_for_sync(new_jobs)
 
+    # Load schema mapping once
+    try:
+        with open(PROJECT_ROOT / "src/airtable/schema.json") as f:
+            schema = json.load(f)
+        mapping = {
+            field["supabase_source_column"]: field["name"]
+            for field in schema["fields"]
+            if field.get("supabase_source_column") and field.get("type") != "lastModifiedTime"
+        }
+    except FileNotFoundError:
+        LOGGER.error("schema.json not found. Cannot format records. Exiting.")
+        return
+
+    # Get existing skills map once
+    existing_skills_map = get_all_existing_skills_map()
+
     # 5. Format records for Airtable
     LOGGER.info("Step 4: Formatting records for Airtable...")
-    formatted_records = format_records_for_airtable(prioritized_jobs)
+    formatted_records = format_records_for_airtable(prioritized_jobs, mapping, existing_skills_map)
 
     # 6. Push new records to Airtable
     LOGGER.info("Step 5: Pushing new records to Airtable...")

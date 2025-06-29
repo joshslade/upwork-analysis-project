@@ -7,5 +7,5 @@ CREATE TABLE IF NOT EXISTS search_results (
 );
 
 -- Step 1: Add the new column
-ALTER TABLE jobs
+ALTER TABLE search_results
 ADD COLUMN is_applied BOOLEAN DEFAULT FALSE;

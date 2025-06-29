@@ -27,3 +27,11 @@ CREATE TABLE IF NOT EXISTS jobs (
     is_sts_vector_search_result BOOLEAN,
     relevance_encoded JSONB
 );
+
+-- Step 1: Add the new column
+ALTER TABLE jobs
+ADD COLUMN is_applied BOOLEAN DEFAULT FALSE;
+
+-- Step 2: Add the new column
+ALTER TABLE jobs
+ADD COLUMN airtable_status TEXT DEFAULT null;

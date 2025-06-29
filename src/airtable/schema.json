@@ -4,199 +4,197 @@
       "type": "singleLineText",
       "id": "fldzLCpPrCLfmi3kg",
       "name": "job_id",
-      "description": null
+      "description": null,
+      "supabase_source_column": "job_id"
     },
     {
       "type": "multilineText",
       "id": "fld8WRN8eijWU4BOj",
       "name": "title",
-      "description": null
+      "description": null,
+      "supabase_source_column": "title"
     },
     {
       "type": "multilineText",
       "id": "fldjNXVlvEodvVGwg",
       "name": "description",
-      "description": null
+      "description": null,
+      "supabase_source_column": "description"
     },
     {
       "type": "button",
       "id": "fldaJLzGFuH00TlSN",
       "name": "Open URL",
-      "description": null
+      "description": null,
+      "supabase_source_column": "url"
     },
     {
       "type": "singleSelect",
       "id": "fldnbHX4jhLzg0S4O",
       "name": "Status",
-      "description": null
+      "description": null,
+      "supabase_source_column": "airtable_status"
     },
     {
       "type": "singleSelect",
       "id": "fldzyDLiTKDW18mEI",
       "name": "engagement",
-      "description": null
+      "description": null,
+      "supabase_source_column": "engagement"
     },
     {
       "type": "singleSelect",
       "id": "fldynzWNzq3B5Zu3H",
       "name": "proposalsTier",
-      "description": null
+      "description": null,
+      "supabase_source_column": "proposals_tier"
     },
     {
       "type": "singleSelect",
       "id": "fldVXAoXOVjBtpzHt",
       "name": "tierText",
-      "description": null
+      "description": null,
+      "supabase_source_column": "tier_text"
     },
     {
       "type": "singleLineText",
       "id": "fldac573SshHsDyGH",
       "name": "client_country",
-      "description": null
+      "description": null,
+      "supabase_source_column": "client_country"
     },
     {
       "type": "currency",
       "id": "fldzEGQNfkKvZLy7v",
       "name": "client_totalSpent",
-      "description": null
+      "description": null,
+      "supabase_source_column": "client_total_spent"
     },
     {
       "type": "checkbox",
       "id": "fldrKxU0e7KhLUgrN",
       "name": "client_payVerified",
-      "description": null
+      "description": null,
+      "supabase_source_column": "client_payment_verified"
     },
     {
       "type": "number",
       "id": "fld0KfvuwdWtJ5iZf",
       "name": "client_reviews",
-      "description": null
+      "description": null,
+      "supabase_source_column": "client_total_reviews"
     },
     {
       "type": "number",
       "id": "fldW6jPLZ5mLx8QLf",
       "name": "client_feedback",
-      "description": null
+      "description": null,
+      "supabase_source_column": "client_avg_feedback"
     },
     {
       "type": "currency",
       "id": "fldI7ZdaXoW4okjPf",
       "name": "fixed_budget",
-      "description": null
+      "description": null,
+      "supabase_source_column": "fixed_budget"
     },
     {
       "type": "currency",
       "id": "fldW2REMyFC0ADIKP",
       "name": "hourly_budget_min",
-      "description": null
+      "description": null,
+      "supabase_source_column": "hourly_budget_min"
     },
     {
       "type": "currency",
       "id": "flduhyyXPGejdBACs",
       "name": "hourly_budget_max",
-      "description": null
+      "description": null,
+      "supabase_source_column": "hourly_budget_max"
     },
     {
       "type": "singleSelect",
       "id": "fldNkAr3fomdhmwj6",
       "name": "currency",
-      "description": null
+      "description": null,
+      "supabase_source_column": "currency"
     },
     {
       "type": "multipleRecordLinks",
       "id": "fldq2nqYrBkR32xp5",
       "name": "skills",
-      "description": null
+      "description": null,
+      "supabase_source_column": "skills"
     },
     {
       "type": "url",
       "id": "fldjXVKX4nwLy9Byg",
       "name": "url",
-      "description": null
-    },
-    {
-      "type": "multilineText",
-      "id": "fldDwPaN4i2ATSrp7",
-      "name": "ciphertext",
-      "description": null
+      "description": null,
+      "supabase_source_column": "url"
     },
     {
       "type": "dateTime",
       "id": "fldEE9ZTUZT2YChNQ",
       "name": "createdOn",
-      "description": null
+      "description": null,
+      "supabase_source_column": "created_on"
     },
     {
       "type": "dateTime",
       "id": "fldjPMZH95eoKYJdY",
       "name": "publishedOn",
-      "description": null
+      "description": null,
+      "supabase_source_column": "published_on"
     },
     {
       "type": "dateTime",
       "id": "fldHlLwIwclZRINRH",
       "name": "renewedOn",
-      "description": null
+      "description": null,
+      "supabase_source_column": "renewed_on"
     },
     {
-      "type": "number",
+      "type": "singleLineText",
       "id": "fldqmNlRJhNKikckW",
-      "name": "type",
-      "description": null
+      "name": "job_type",
+      "description": null,
+      "supabase_source_column": "job_type"
     },
     {
       "type": "singleSelect",
       "id": "fldOKEuULF5FpJlRs",
       "name": "durationLabel",
-      "description": null
+      "description": null,
+      "supabase_source_column": "duration_label"
     },
     {
       "type": "number",
       "id": "fld7jjRLaJvMfQ2X0",
       "name": "connectPrice",
-      "description": null
-    },
-    {
-      "type": "multilineText",
-      "id": "fldRcuzCr1d9mL2of",
-      "name": "clientRelation",
-      "description": null
-    },
-    {
-      "type": "number",
-      "id": "fldJgdc9LdvXgtDGa",
-      "name": "freelancersToHire",
-      "description": null
+      "description": null,
+      "supabase_source_column": "connect_price"
     },
     {
       "type": "multilineText",
       "id": "fld7RRvuRDv4pWNAI",
       "name": "relevanceEncoded",
-      "description": null
-    },
-    {
-      "type": "checkbox",
-      "id": "fldkpJCR6N1ewQblv",
-      "name": "enterpriseJob",
-      "description": null
+      "description": null,
+      "supabase_source_column": "relevance_encoded"
     },
     {
       "type": "checkbox",
       "id": "fldFII0WTdO24j0Pu",
       "name": "is_applied",
-      "description": null
-    },
-    {
-      "type": "checkbox",
-      "id": "fldGfQVs0s1XRQ4Sv",
-      "name": "premium",
-      "description": null
+      "description": null,
+      "supabase_source_column": "is_applied"
     },
     {
       "type": "number",
       "id": "fld0cSQy0neFFWxy6",
       "name": "weekly_budget",
-      "description": null
+      "description": null,
+      "supabase_source_column": "weekly_budget"
     }
   ]
 }

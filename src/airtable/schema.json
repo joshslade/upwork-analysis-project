@@ -1,0 +1,202 @@
+{
+  "fields": [
+    {
+      "type": "singleLineText",
+      "id": "fldzLCpPrCLfmi3kg",
+      "name": "job_id",
+      "description": null
+    },
+    {
+      "type": "multilineText",
+      "id": "fld8WRN8eijWU4BOj",
+      "name": "title",
+      "description": null
+    },
+    {
+      "type": "multilineText",
+      "id": "fldjNXVlvEodvVGwg",
+      "name": "description",
+      "description": null
+    },
+    {
+      "type": "button",
+      "id": "fldaJLzGFuH00TlSN",
+      "name": "Open URL",
+      "description": null
+    },
+    {
+      "type": "singleSelect",
+      "id": "fldnbHX4jhLzg0S4O",
+      "name": "Status",
+      "description": null
+    },
+    {
+      "type": "singleSelect",
+      "id": "fldzyDLiTKDW18mEI",
+      "name": "engagement",
+      "description": null
+    },
+    {
+      "type": "singleSelect",
+      "id": "fldynzWNzq3B5Zu3H",
+      "name": "proposalsTier",
+      "description": null
+    },
+    {
+      "type": "singleSelect",
+      "id": "fldVXAoXOVjBtpzHt",
+      "name": "tierText",
+      "description": null
+    },
+    {
+      "type": "singleLineText",
+      "id": "fldac573SshHsDyGH",
+      "name": "client_country",
+      "description": null
+    },
+    {
+      "type": "currency",
+      "id": "fldzEGQNfkKvZLy7v",
+      "name": "client_totalSpent",
+      "description": null
+    },
+    {
+      "type": "checkbox",
+      "id": "fldrKxU0e7KhLUgrN",
+      "name": "client_payVerified",
+      "description": null
+    },
+    {
+      "type": "number",
+      "id": "fld0KfvuwdWtJ5iZf",
+      "name": "client_reviews",
+      "description": null
+    },
+    {
+      "type": "number",
+      "id": "fldW6jPLZ5mLx8QLf",
+      "name": "client_feedback",
+      "description": null
+    },
+    {
+      "type": "currency",
+      "id": "fldI7ZdaXoW4okjPf",
+      "name": "fixed_budget",
+      "description": null
+    },
+    {
+      "type": "currency",
+      "id": "fldW2REMyFC0ADIKP",
+      "name": "hourly_budget_min",
+      "description": null
+    },
+    {
+      "type": "currency",
+      "id": "flduhyyXPGejdBACs",
+      "name": "hourly_budget_max",
+      "description": null
+    },
+    {
+      "type": "singleSelect",
+      "id": "fldNkAr3fomdhmwj6",
+      "name": "currency",
+      "description": null
+    },
+    {
+      "type": "multipleRecordLinks",
+      "id": "fldq2nqYrBkR32xp5",
+      "name": "skills",
+      "description": null
+    },
+    {
+      "type": "url",
+      "id": "fldjXVKX4nwLy9Byg",
+      "name": "url",
+      "description": null
+    },
+    {
+      "type": "multilineText",
+      "id": "fldDwPaN4i2ATSrp7",
+      "name": "ciphertext",
+      "description": null
+    },
+    {
+      "type": "dateTime",
+      "id": "fldEE9ZTUZT2YChNQ",
+      "name": "createdOn",
+      "description": null
+    },
+    {
+      "type": "dateTime",
+      "id": "fldjPMZH95eoKYJdY",
+      "name": "publishedOn",
+      "description": null
+    },
+    {
+      "type": "dateTime",
+      "id": "fldHlLwIwclZRINRH",
+      "name": "renewedOn",
+      "description": null
+    },
+    {
+      "type": "number",
+      "id": "fldqmNlRJhNKikckW",
+      "name": "type",
+      "description": null
+    },
+    {
+      "type": "singleSelect",
+      "id": "fldOKEuULF5FpJlRs",
+      "name": "durationLabel",
+      "description": null
+    },
+    {
+      "type": "number",
+      "id": "fld7jjRLaJvMfQ2X0",
+      "name": "connectPrice",
+      "description": null
+    },
+    {
+      "type": "multilineText",
+      "id": "fldRcuzCr1d9mL2of",
+      "name": "clientRelation",
+      "description": null
+    },
+    {
+      "type": "number",
+      "id": "fldJgdc9LdvXgtDGa",
+      "name": "freelancersToHire",
+      "description": null
+    },
+    {
+      "type": "multilineText",
+      "id": "fld7RRvuRDv4pWNAI",
+      "name": "relevanceEncoded",
+      "description": null
+    },
+    {
+      "type": "checkbox",
+      "id": "fldkpJCR6N1ewQblv",
+      "name": "enterpriseJob",
+      "description": null
+    },
+    {
+      "type": "checkbox",
+      "id": "fldFII0WTdO24j0Pu",
+      "name": "is_applied",
+      "description": null
+    },
+    {
+      "type": "checkbox",
+      "id": "fldGfQVs0s1XRQ4Sv",
+      "name": "premium",
+      "description": null
+    },
+    {
+      "type": "number",
+      "id": "fld0cSQy0neFFWxy6",
+      "name": "weekly_budget",
+      "description": null
+    }
+  ]
+}

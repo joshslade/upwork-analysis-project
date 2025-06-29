@@ -114,10 +114,10 @@ upwork_scraper_airtable/
 - [x] Build `process_jobs.py` to combine JSON ➜ DataFrame
 - [x] Design Airtable base & fields
 - [x] Implement `airtable/push.py`
-- [ ] Design Supabase base & fields
-- [ ] Implement `supabase/push.py`
+- [x] Design Supabase base & fields
+- [x] Implement `supabase/push.py`
 - [ ] Develop workflow and archive automations `airtable/archive.py`
-- [ ] Write unit tests (`tests/`)
+- [x] Write unit tests (`tests/`)
 - [ ] Run first full workflow & verify Airtable rows
 - [ ] Automate cleanup of HTML files
 - [ ] Refine README, add screenshots, publish demo GIF
@@ -184,9 +184,12 @@ Happy scraping — and may your Upwork feed finally feel like **your** feed!
         - proposalsTier (Track the lifetime of a job on the platform and monitor proposals growth)
 
 ### Workflow
-1. Generate & Open search URLS
-2. Save pages using WebScrapBook
-3. Process downloads - check searchID does not exist before proceeding
-4. Extract & process jobs
-5. Push jobs to supabase - UPSERT job_id, UPDATE search record with total jobs and new jobs
-6. Refresh Airtable with Updated jobs, archive the triaged jobs
+1. Generate & Open search URLS - not yet implemented
+2. Save pages using WebScrapBook - done
+3. Process downloads using main.py and push to supabase - done
+  - extract_jobs from the html into json files
+  - process_jobs to transform and load the data into supabase
+4. Cleanup and load jobs into Airtable - TODO next
+  - Query jobs in Airtable and fetch the airtable status for each job_id. Update airtable_status in supabase jobs schema
+  - Flush all lead and discarded jobs from airtable
+  - push top 50 jobs from supabase to airtable where Status is lead or blank based on priority logic to be defined.

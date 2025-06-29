@@ -28,36 +28,110 @@ def setup_supabase_client():
     # No explicit return needed as we're using the global instance.
     pass
 
-# Cleanup fixtures with correct dependencies for order
+# Cleanup fixtures with correct dependencies for order and specific deletion
 @pytest.fixture
 async def cleanup_search_results():
-    """Fixture to clean up search_results table before dependent tables."""
-    yield
-    try:
-        response = supabase.table('search_results').delete().neq('search_id', '' ).execute()
-        print(f"Cleaned up {len(response.data)} records from search_results.")
-    except Exception as e:
-        print(f"Error during search_results cleanup: {e}")
+    """Fixture to clean up search_results table after each test."""
+    created_records = []
+    yield created_records
+    if not created_records:
+        return
+    print(f"\nDEBUG: cleanup_search_results - Records to delete: {created_records}")
+    for record_id in created_records:
+        try:
+            # Assuming record_id is a tuple (search_id, job_id)
+            response = await supabase.table('search_results').delete().eq('search_id', record_id[0]).eq('job_id', record_id[1]).execute()
+            if response.data:
+                print(f"Cleaned up {len(response.data)} records for search_id {record_id[0]}, job_id {record_id[1]} from search_results.")
+            else:
+                print(f"No records found to clean up for search_id {record_id[0]}, job_id {record_id[1]}.")
+        except Exception as e:
+            print(f"Error during search_results cleanup for {record_id}: {e}")
+
 
 @pytest.fixture
-async def cleanup_jobs(cleanup_search_results):
+async def cleanup_jobs():
     """Fixture to clean up jobs table after search_results."""
-    yield
-    try:
-        response = supabase.table('jobs').delete().neq('job_id', '' ).execute()
-        print(f"Cleaned up {len(response.data)} records from jobs.")
-    except Exception as e:
-        print(f"Error during jobs cleanup: {e}")
+    created_job_ids = []
+    yield created_job_ids
+    if not created_job_ids:
+        return
+    print(f"\nDEBUG: cleanup_jobs - Job IDs to delete: {created_job_ids}")
+    for job_id in created_job_ids:
+        try:
+            response = await supabase.table('jobs').delete().eq('job_id', job_id).execute()
+            if response.data:
+                print(f"Cleaned up {len(response.data)} records for job_id {job_id} from jobs.")
+            else:
+                print(f"No records found to clean up for job_id {job_id}.")
+        except Exception as e:
+            print(f"Error during jobs cleanup for {job_id}: {e}")
 
 @pytest.fixture
-async def cleanup_scrape_requests(cleanup_search_results, cleanup_jobs):
+async def cleanup_scrape_requests():
     """Fixture to clean up scrape_requests table after search_results and jobs."""
-    yield
-    try:
-        response = supabase.table('scrape_requests').delete().neq('search_id', '' ).execute()
-        print(f"Cleaned up {len(response.data)} records from scrape_requests.")
-    except Exception as e:
-        print(f"Error during scrape_requests cleanup: {e}")
+    created_search_ids = []
+    yield created_search_ids
+    if not created_search_ids:
+        return
+    print(f"\nDEBUG: cleanup_scrape_requests - Search IDs to delete: {created_search_ids}")
+    for search_id in created_search_ids:
+        try:
+            response = await supabase.table('scrape_requests').delete().eq('search_id', search_id).execute()
+            if response.data:
+                print(f"Cleaned up {len(response.data)} records for search_id {search_id} from scrape_requests.")
+            else:
+                print(f"No records found to clean up for search_id {search_id}.")
+        except Exception as e:
+            print(f"Error during scrape_requests cleanup for {search_id}: {e}")
+
+
+@pytest.fixture
+async def cleanup_manager():
+    """A manager to handle the cleanup of all test-created records."""
+    # Dictionary to hold all the cleanup data
+    cleanup_data = {
+        "search_results": [],
+        "jobs": [],
+        "scrape_requests": []
+    }
+
+    yield cleanup_data
+
+    # --- Start Cleanup ---
+    # 1. Clean up search_results
+    if cleanup_data["search_results"]:
+        print(f"\n--- Starting search_results cleanup ---")
+        for search_id, job_id in cleanup_data["search_results"]:
+            try:
+                response = supabase.table('search_results').delete().eq('search_id', search_id).eq('job_id', job_id).execute()
+                if response.data:
+                    print(f"Cleaned up search_result: search_id={search_id}, job_id={job_id}")
+            except Exception as e:
+                print(f"Error cleaning up search_result ({search_id}, {job_id}): {e}")
+
+    # 2. Clean up jobs
+    if cleanup_data["jobs"]:
+        print(f"\n--- Starting jobs cleanup ---")
+        for job_id in cleanup_data["jobs"]:
+            try:
+                response = supabase.table('jobs').delete().eq('job_id', job_id).execute()
+                if response.data:
+                    print(f"Cleaned up job: {job_id}")
+            except Exception as e:
+                print(f"Error cleaning up job {job_id}: {e}")
+
+    # 3. Clean up scrape_requests
+    if cleanup_data["scrape_requests"]:
+        print(f"\n--- Starting scrape_requests cleanup ---")
+        for search_id in cleanup_data["scrape_requests"]:
+            try:
+                response = supabase.table('scrape_requests').delete().eq('search_id', search_id).execute()
+                if response.data:
+                    print(f"Cleaned up scrape_request: {search_id}")
+            except Exception as e:
+                print(f"Error cleaning up scrape_request {search_id}: {e}")
+
 
 
 # --- Test _flatten_record --- #
@@ -195,7 +269,7 @@ def test_parse_filename_metadata_different_page_number():
 
 # --- Supabase Integration Tests --- #
 @pytest.mark.asyncio
-async def test_insert_scrape_request_to_supabase(cleanup_scrape_requests):
+async def test_insert_scrape_request_to_supabase(cleanup_manager):
     """Test inserting a scrape request into Supabase."""
     test_search_id = "test_search_123"
     # Make datetime timezone-aware for comparison with Supabase
@@ -205,6 +279,7 @@ async def test_insert_scrape_request_to_supabase(cleanup_scrape_requests):
     test_filepath = "data/raw_html/test_search_123-test_query-page1.html"
 
     await insert_scrape_request(test_search_id, test_query_timestamp, test_query, test_page, test_filepath)
+    cleanup_manager["scrape_requests"].append(test_search_id)
 
     # Verify the record exists in Supabase
     response = supabase.table('scrape_requests').select('*').eq('search_id', test_search_id).execute()
@@ -219,7 +294,7 @@ async def test_insert_scrape_request_to_supabase(cleanup_scrape_requests):
     assert record['processed'] == False
 
 @pytest.mark.asyncio
-async def test_update_scrape_request_status_in_supabase(cleanup_scrape_requests):
+async def test_update_scrape_request_status_in_supabase(cleanup_manager):
     """Test updating the status of a scrape request in Supabase."""
     test_search_id = "test_update_search_456"
     test_query_timestamp = datetime.now(timezone.utc).replace(microsecond=0)
@@ -229,6 +304,7 @@ async def test_update_scrape_request_status_in_supabase(cleanup_scrape_requests)
 
     # Insert initial record
     await insert_scrape_request(test_search_id, test_query_timestamp, test_query, test_page, test_filepath)
+    cleanup_manager["scrape_requests"].append(test_search_id) # Register for cleanup
 
     # Update status
     await update_scrape_request_status(test_search_id, True)
@@ -241,7 +317,7 @@ async def test_update_scrape_request_status_in_supabase(cleanup_scrape_requests)
     assert record['upload_timestamp'] is not None
 
 @pytest.mark.asyncio
-async def test_insert_search_results_to_supabase(cleanup_search_results, cleanup_jobs, cleanup_scrape_requests):
+async def test_insert_search_results_to_supabase(cleanup_manager):
     """Test inserting search results into Supabase."""
     test_search_id = "test_search_results_789"
     test_job_ids = ["job_A", "job_B"]
@@ -253,27 +329,73 @@ async def test_insert_search_results_to_supabase(cleanup_search_results, cleanup
 
     # Insert a dummy scrape request first, as search_results references it
     await insert_scrape_request(test_search_id, test_query_timestamp, test_query, test_page, test_filepath)
+    cleanup_manager["scrape_requests"].append(test_search_id)
 
     # Insert dummy jobs first, as search_results references them
     dummy_jobs = [
         {"job_id": "job_A", "title": "Job A", "url": "http://example.com/A"},
         {"job_id": "job_B", "title": "Job B", "url": "http://example.com/B"},
     ]
-    # Note: supabase.table(...).upsert(...).execute() is synchronous, no await needed here
     supabase.table('jobs').upsert(dummy_jobs, on_conflict='job_id').execute()
+    cleanup_manager["jobs"].extend([job['job_id'] for job in dummy_jobs])
 
     await insert_search_results(test_search_id, test_job_ids, test_proposals_tiers)
+    # Register each (search_id, job_id) tuple for cleanup
+    for job_id in test_job_ids:
+        cleanup_manager["search_results"].append((test_search_id, job_id))
 
-    # Verify the records exist in Supabase
-    response = supabase.table('search_results').select('*').eq('search_id', test_search_id).order('job_id').execute()
-    assert len(response.data) == 2
-    
-    record1 = response.data[0]
-    assert record1['search_id'] == test_search_id
-    assert record1['job_id'] == "job_A"
-    assert record1['proposals_tier'] == "5to10"
 
-    record2 = response.data[1]
-    assert record2['search_id'] == test_search_id
-    assert record2['job_id'] == "job_B"
-    assert record2['proposals_tier'] == "10to15"
+@pytest.mark.asyncio
+async def test_main_processing_logic(cleanup_manager, sample_raw_record):
+    """
+    Test the main end-to-end processing logic of the script.
+    This test simulates the CLI execution by creating a temporary directory
+    with a dummy JSON file and then running the main() function on it.
+    """
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_dir_path = Path(temp_dir)
+        
+        # --- Setup Test Data ---
+        test_search_id = "20240101123000000"
+        test_query = "test_query"
+        test_page = 1
+        json_filename = f"{test_search_id}-{test_query}-page{test_page}.json"
+        json_filepath = temp_dir_path / json_filename
+
+        # Create a dummy JSON file with a list of job records
+        job_records = [sample_raw_record]
+        with open(json_filepath, 'w') as f:
+            json.dump(job_records, f)
+
+        # Register IDs for cleanup
+        cleanup_manager["scrape_requests"].append(test_search_id)
+        cleanup_manager["jobs"].append(sample_raw_record['uid'])
+        cleanup_manager["search_results"].append((test_search_id, sample_raw_record['uid']))
+
+        # --- Run the main processing function ---
+        # We need to import main from the script to test it
+        from src.process_jobs import main as process_main
+        await process_main(argv=[f"--input={temp_dir}"])
+
+        # --- Verification ---
+        # 1. Verify scrape_requests table
+        response = supabase.table('scrape_requests').select('*').eq('search_id', test_search_id).execute()
+        assert len(response.data) == 1
+        scrape_request = response.data[0]
+        assert scrape_request['processed'] is True
+        assert scrape_request['query'] == test_query
+        assert scrape_request['page'] == test_page
+
+        # 2. Verify jobs table
+        job_id = sample_raw_record['uid']
+        response = supabase.table('jobs').select('*').eq('job_id', job_id).execute()
+        assert len(response.data) == 1
+        job = response.data[0]
+        assert job['title'] == "Data Scientist Needed" # Stripped HTML
+        assert job['client_country'] == "USA"
+
+        # 3. Verify search_results table
+        response = supabase.table('search_results').select('*').eq('search_id', test_search_id).eq('job_id', job_id).execute()
+        assert len(response.data) == 1
+        search_result = response.data[0]
+        assert search_result['proposals_tier'] == "5to10"

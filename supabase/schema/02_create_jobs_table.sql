@@ -35,3 +35,7 @@ ADD COLUMN is_applied BOOLEAN DEFAULT FALSE;
 -- Step 2: Add the new column
 ALTER TABLE jobs
 ADD COLUMN airtable_status TEXT DEFAULT null;
+
+-- Step 3: Add the new column
+ALTER TABLE jobs
+ADD COLUMN airtable_status_change_time TIMESTAMPTZ DEFAULT null;

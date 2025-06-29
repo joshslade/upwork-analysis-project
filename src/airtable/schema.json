@@ -195,6 +195,13 @@
       "name": "weekly_budget",
       "description": null,
       "supabase_source_column": "weekly_budget"
+    },
+    {
+      "type": "lastModifiedTime",
+      "id": "fldrtYHebddp3Xuzr",
+      "name": "Last Modified",
+      "description": null,
+      "supabase_source_column": "airtable_status_change_time"
     }
   ]
 }

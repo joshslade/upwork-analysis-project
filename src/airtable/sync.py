@@ -1,4 +1,3 @@
-
 import os
 import json
 import logging
@@ -33,16 +32,30 @@ AIRTABLE_TABLE_ID_JOBS = os.environ.get("AIRTABLE_TABLE_ID_JOBS")
 AIRTABLE_TABLE_ID_SKILLS = os.environ.get("AIRTABLE_TABLE_ID_SKILLS")
 
 # --- Initialization ---
-if not all([SUPABASE_URL, SUPABASE_KEY, AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_TABLE_ID_JOBS, AIRTABLE_TABLE_ID_SKILLS]):
-    LOGGER.error("One or more environment variables are not set. Please check your .env file.")
+if not all(
+    [
+        SUPABASE_URL,
+        SUPABASE_KEY,
+        AIRTABLE_API_KEY,
+        AIRTABLE_BASE_ID,
+        AIRTABLE_TABLE_ID_JOBS,
+        AIRTABLE_TABLE_ID_SKILLS,
+    ]
+):
+    LOGGER.error(
+        "One or more environment variables are not set. Please check your .env file."
+    )
     raise SystemExit(1)
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 airtable_jobs_table = Table(AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_TABLE_ID_JOBS)
-airtable_skills_table = Table(AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_TABLE_ID_SKILLS)
+airtable_skills_table = Table(
+    AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_TABLE_ID_SKILLS
+)
 
 
 # --- Function Definitions ---
+
 
 def get_airtable_updates() -> List[Dict[str, Any]]:
     """Fetches records from Airtable that have a non-empty 'Status' field."""
@@ -50,51 +63,69 @@ def get_airtable_updates() -> List[Dict[str, Any]]:
     all_records = airtable_jobs_table.all()
 
     # Filter for records that have a 'Status' field set
-    updated_records = [rec for rec in all_records if 'Status' in rec.get('fields', {})]
-    LOGGER.info(f"Found {len(updated_records)} records in Airtable with status updates.")
+    updated_records = [rec for rec in all_records if "Status" in rec.get("fields", {})]
+    LOGGER.info(
+        f"Found {len(updated_records)} records in Airtable with status updates."
+    )
     return updated_records
+
 
 def backup_statuses_to_supabase(records: List[Dict[str, Any]]):
     """Updates the 'airtable_status' in Supabase for the given records."""
     updates = []
     for record in records:
-        fields = record.get('fields', {})
-        job_id = fields.get('job_id')
-        status = fields.get('Status')
-        if job_id and status:
-            updates.append({'job_id': job_id, 'airtable_status': status})
+        fields = record.get("fields", {})
+        job_id = fields.get("job_id")
+        status = fields.get("Status")
+        status_updated_at = fields.get("Last Modified")
+        if job_id and status and status_updated_at:
+            updates.append(
+                {
+                    "job_id": job_id,
+                    "airtable_status": status,
+                    "airtable_status_change_time": status_updated_at,
+                }
+            )
 
     if not updates:
         LOGGER.info("No valid records to update in Supabase.")
         return
 
     # Extract job_ids from the updates
-    job_ids_to_check = [u['job_id'] for u in updates]
+    job_ids_to_check = [u["job_id"] for u in updates]
 
     try:
         # Fetch existing job_ids from Supabase
-        existing_jobs_response = supabase.table('jobs').select('job_id').in_('job_id', job_ids_to_check).execute()
-        existing_job_ids = {record['job_id'] for record in existing_jobs_response.data}
+        existing_jobs_response = (
+            supabase.table("jobs")
+            .select("job_id")
+            .in_("job_id", job_ids_to_check)
+            .execute()
+        )
+        existing_job_ids = {record["job_id"] for record in existing_jobs_response.data}
 
         # Filter updates to only include existing job_ids
-        updates_for_existing_jobs = [u for u in updates if u['job_id'] in existing_job_ids]
+        updates_for_existing_jobs = [
+            u for u in updates if u["job_id"] in existing_job_ids
+        ]
 
         if not updates_for_existing_jobs:
-            LOGGER.info("No matching job_ids found in Supabase for the provided updates. Ignoring.")
+            LOGGER.info(
+                "No matching job_ids found in Supabase for the provided updates. Ignoring."
+            )
             return
 
-        # Perform update operation for existing jobs
-        for update_item in updates_for_existing_jobs:
-            response = supabase.table('jobs').update({'airtable_status': update_item['airtable_status']}).eq('job_id', update_item['job_id']).execute()
-            if response.data:
-                LOGGER.info(f"Updated airtable_status for job_id {update_item['job_id']}.")
-            else:
-                LOGGER.warning(f"Failed to update airtable_status for job_id {update_item['job_id']}. Record might have been deleted.")
+        # Perform bulk upsert operation for existing jobs (acts as update since job_ids are pre-filtered)
+        response = supabase.table('jobs').upsert(updates_for_existing_jobs, on_conflict='job_id').execute()
 
-        LOGGER.info(f"Successfully backed up {len(updates_for_existing_jobs)} status updates to Supabase.")
+        if response.data:
+            LOGGER.info(f"Successfully backed up {len(response.data)} status updates to Supabase.")
+        else:
+            LOGGER.warning("No records were updated in Supabase during backup.")
 
     except Exception as e:
         LOGGER.error(f"Error backing up statuses to Supabase: {e}")
+
 
 def delete_old_airtable_records():
     """Deletes records from Airtable where 'Status' is 'discarded' or 'lead'."""
@@ -106,7 +137,7 @@ def delete_old_airtable_records():
         LOGGER.info("No records to delete from Airtable.")
         return
 
-    record_ids = [rec['id'] for rec in records_to_delete]
+    record_ids = [rec["id"] for rec in records_to_delete]
     LOGGER.info(f"Found {len(record_ids)} records to delete.")
 
     try:
@@ -116,21 +147,31 @@ def delete_old_airtable_records():
     except Exception as e:
         LOGGER.error(f"Error deleting records from Airtable: {e}")
 
+
 def get_new_jobs_from_supabase() -> List[Dict[str, Any]]:
     """Fetches jobs from Supabase where 'airtable_status' is NULL or 'lead'."""
     try:
         # Supabase requires `is.null` for NULL checks and `eq` for equality
-        response = supabase.table('jobs').select('*').or_('airtable_status.is.null,airtable_status.eq.Lead').execute()
-        LOGGER.info(f"Found {len(response.data)} new or 'Lead' status jobs in Supabase.")
+        response = (
+            supabase.table("jobs")
+            .select("*")
+            .or_("airtable_status.is.null,airtable_status.eq.Lead")
+            .execute()
+        )
+        LOGGER.info(
+            f"Found {len(response.data)} new or 'Lead' status jobs in Supabase."
+        )
         return response.data
     except Exception as e:
         LOGGER.error(f"Error fetching new jobs from Supabase: {e}")
         return []
 
+
 def prioritize_jobs_for_sync(jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Placeholder for custom logic to prioritize which jobs to sync."""
     LOGGER.info("Applying prioritization logic (currently a placeholder).")
     return jobs
+
 
 def get_or_create_skill_record_ids(skill_names: List[str]) -> List[str]:
     """Ensures skills exist in the 'skills' table and returns their record IDs."""
@@ -139,7 +180,11 @@ def get_or_create_skill_record_ids(skill_names: List[str]) -> List[str]:
 
     # Fetch all existing skills to minimize API calls
     existing_skills_records = airtable_skills_table.all()
-    existing_skills_map = {rec['fields']['Name']: rec['id'] for rec in existing_skills_records if 'Name' in rec['fields']}
+    existing_skills_map = {
+        rec["fields"]["Name"]: rec["id"]
+        for rec in existing_skills_records
+        if "Name" in rec["fields"]
+    }
 
     skill_ids = []
     skills_to_create = []
@@ -149,18 +194,21 @@ def get_or_create_skill_record_ids(skill_names: List[str]) -> List[str]:
             skill_ids.append(existing_skills_map[name])
         else:
             # Collect skills to create in a batch
-            skills_to_create.append({'Name': name})
+            skills_to_create.append({"Name": name})
 
     if skills_to_create:
         try:
             created_records = airtable_skills_table.batch_create(skills_to_create)
-            LOGGER.info(f"Created {len(created_records)} new skill records in Airtable.")
+            LOGGER.info(
+                f"Created {len(created_records)} new skill records in Airtable."
+            )
             for rec in created_records:
-                skill_ids.append(rec['id'])
+                skill_ids.append(rec["id"])
         except Exception as e:
             LOGGER.error(f"Error creating new skill records: {e}")
 
     return skill_ids
+
 
 def format_records_for_airtable(jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Formats Supabase job data for the Airtable API using Field ID mapping."""
@@ -168,7 +216,11 @@ def format_records_for_airtable(jobs: List[Dict[str, Any]]) -> List[Dict[str, An
         with open(PROJECT_ROOT / "src/airtable/schema.json") as f:
             schema = json.load(f)
         # Create a mapping from supabase_source_column to airtable_field_name
-        mapping = {field['supabase_source_column']: field['name'] for field in schema['fields'] if field.get('supabase_source_column')}
+        mapping = {
+            field["supabase_source_column"]: field["name"]
+            for field in schema["fields"]
+            if field.get("supabase_source_column") and field.get("type") != "lastModifiedTime"
+        }
     except FileNotFoundError:
         LOGGER.error("schema.json not found. Cannot format records.")
         return []
@@ -187,9 +239,12 @@ def format_records_for_airtable(jobs: List[Dict[str, Any]]) -> List[Dict[str, An
             elif supabase_col in job and job[supabase_col] is not None:
                 airtable_fields[airtable_name] = job[supabase_col]
         formatted_records.append({"fields": airtable_fields})
-    
-    LOGGER.info(f"Successfully formatted {len(formatted_records)} records for Airtable.")
+
+    LOGGER.info(
+        f"Successfully formatted {len(formatted_records)} records for Airtable."
+    )
     return formatted_records
+
 
 def push_records_to_airtable(records: List[Dict[str, Any]]):
     """Pushes formatted records to Airtable in batches of 10."""
@@ -199,10 +254,11 @@ def push_records_to_airtable(records: List[Dict[str, Any]]):
 
     # pyairtable's batch_create handles batching automatically
     try:
-        airtable_jobs_table.batch_create([rec['fields'] for rec in records])
+        airtable_jobs_table.batch_create([rec["fields"] for rec in records])
         LOGGER.info(f"Successfully pushed {len(records)} records to Airtable.")
     except Exception as e:
         LOGGER.error(f"Error pushing records to Airtable: {e}")
+
 
 def main():
     """Main function to orchestrate the sync process."""
@@ -239,6 +295,7 @@ def main():
     push_records_to_airtable(formatted_records)
 
     LOGGER.info("--- Sync Complete ---")
+
 
 if __name__ == "__main__":
     main()

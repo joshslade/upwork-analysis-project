@@ -57,6 +57,13 @@ def main():
     ]
     run_command(process_jobs_command, "Processing JSON data and pushing to Supabase...")
 
+    # Step 3: Run airtable sync
+    airtable_sync_command = [
+        sys.executable, # Use the current Python interpreter
+        str(project_root / "src" / "airtable" / "sync.py"),
+    ]
+    run_command(airtable_sync_command, "Syncing with Airtable...")
+
     LOGGER.info("Upwork Scraper workflow completed successfully!")
 
 if __name__ == "__main__":

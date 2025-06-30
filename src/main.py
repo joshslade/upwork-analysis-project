@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import logging
+import webbrowser
 from pathlib import Path
 
 logging.basicConfig(
@@ -14,12 +15,7 @@ def run_command(command: list[str], description: str) -> None:
     """Helper function to run a shell command and log its output."""
     LOGGER.info(f"Running: {description}")
     try:
-        result = subprocess.run(command, check=True, capture_output=True, text=True)
-        LOGGER.info(f"Command successful: {description}")
-        if result.stdout:
-            LOGGER.debug(f"Stdout:\n{result.stdout}")
-        if result.stderr:
-            LOGGER.debug(f"Stderr:\n{result.stderr}")
+        result = subprocess.run(command, check=True, text=True)
     except subprocess.CalledProcessError as e:
         LOGGER.error(f"Command failed: {description}")
         LOGGER.error(f"Stderr:\n{e.stderr}")
@@ -65,6 +61,17 @@ def main():
     run_command(airtable_sync_command, "Syncing with Airtable...")
 
     LOGGER.info("Upwork Scraper workflow completed successfully!")
+
+    # Step 4: Open Airtable URL
+    airtable_url = "https://airtable.com/appnQcUCcFVuyYrQl/pagSdGUUho0LzommN?OXEiR=sfsDR0TH4uaAwBSnR&OXEiR%3Agroup=eyJwZWw0ZE1UMlVsVHAyZWM3QSI6W3siY29sdW1uSWQiOiJmbGRuYkhYNGpoTHpnMFM0TyIsImFzY2VuZGluZyI6ZmFsc2V9XX0"
+    LOGGER.info(f"Opening Airtable URL in Google Chrome: {airtable_url}")
+    try:
+        # Try to get the Chrome browser controller
+        browser = webbrowser.get('google-chrome')
+        browser.open(airtable_url)
+    except webbrowser.Error:
+        LOGGER.warning("Google Chrome not found. Opening in default browser.")
+        webbrowser.open(airtable_url)
 
 if __name__ == "__main__":
     main()

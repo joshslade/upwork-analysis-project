@@ -16,6 +16,11 @@ logging.basicConfig(
 )
 LOGGER = logging.getLogger(__name__)
 
+# Quieten verbose loggers
+logging.getLogger("supabase").setLevel(logging.WARNING)
+logging.getLogger("gotrue").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 # Load environment variables
 PROJECT_ROOT = Path("/Users/jslade/Documents/GitHub/upwork_scraper/")
 DOTENV_PATH = PROJECT_ROOT / ".env"

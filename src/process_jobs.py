@@ -28,6 +28,11 @@ logging.basicConfig(
 )
 LOGGER = logging.getLogger(__name__)
 
+# Quieten verbose loggers
+logging.getLogger("supabase").setLevel(logging.WARNING)
+logging.getLogger("gotrue").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 # Initialize Supabase client
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")

@@ -31,6 +31,14 @@ AIRTABLE_BASE_ID = os.environ.get("AIRTABLE_BASE_ID")
 AIRTABLE_TABLE_ID_JOBS = os.environ.get("AIRTABLE_TABLE_ID_JOBS")
 AIRTABLE_TABLE_ID_SKILLS = os.environ.get("AIRTABLE_TABLE_ID_SKILLS")
 
+# A list of Supabase columns that are safe to update on existing Airtable records.
+# These are fields that are not typically manually edited in Airtable.
+UPDATABLE_FIELDS = [
+    "proposals_tier",
+    "is_applied"
+]
+
+
 # --- Initialization ---
 if not all(
     [
@@ -146,6 +154,113 @@ def delete_old_airtable_records():
         LOGGER.info(f"Successfully deleted {len(record_ids)} records from Airtable.")
     except Exception as e:
         LOGGER.error(f"Error deleting records from Airtable: {e}")
+
+
+def delete_orphaned_skills():
+    """Deletes skill records from Airtable that are not linked to any jobs."""
+    LOGGER.info("Checking for orphaned skills to delete...")
+    try:
+        all_skills = airtable_skills_table.all()
+    except Exception as e:
+        LOGGER.error(f"Failed to fetch skills from Airtable: {e}")
+        return
+
+    if not all_skills:
+        LOGGER.info("No skills found in Airtable to check.")
+        return
+
+    # In the 'Skills' table, the field linking to 'Jobs' is likely named 'Jobs'.
+    # A skill is orphaned if this field is empty or does not exist in the record.
+    orphaned_skill_ids = [
+        skill['id']
+        for skill in all_skills
+        if not skill.get('fields', {}).get('Jobs')
+    ]
+
+    if not orphaned_skill_ids:
+        LOGGER.info("No orphaned skills found to delete.")
+        return
+
+    LOGGER.info(f"Found {len(orphaned_skill_ids)} orphaned skills to delete.")
+
+    try:
+        airtable_skills_table.batch_delete(orphaned_skill_ids)
+        LOGGER.info(f"Successfully deleted {len(orphaned_skill_ids)} orphaned skills.")
+    except Exception as e:
+        LOGGER.error(f"Error deleting orphaned skills from Airtable: {e}")
+
+
+def sync_updates_to_airtable(mapping: Dict[str, str]):
+    """Syncs updates from Supabase to existing records in Airtable."""
+    LOGGER.info("Fetching all remaining records from Airtable to check for updates.")
+    try:
+        airtable_records = airtable_jobs_table.all()
+    except Exception as e:
+        LOGGER.error(f"Failed to fetch records from Airtable: {e}")
+        return
+
+    if not airtable_records:
+        LOGGER.info("No records found in Airtable to update.")
+        return
+
+    job_id_map = {
+        rec["fields"].get("job_id"): rec["id"]
+        for rec in airtable_records
+        if "job_id" in rec["fields"]
+    }
+
+    if not job_id_map:
+        LOGGER.warning("No records with job_id found in Airtable.")
+        return
+
+    LOGGER.info(f"Found {len(job_id_map)} records in Airtable to check for updates.")
+
+    # Fetch the latest data from Supabase for these jobs
+    try:
+        supabase_response = (
+            supabase.table("jobs")
+            .select("*")
+            .in_("job_id", list(job_id_map.keys()))
+            .execute()
+        )
+        supabase_jobs = supabase_response.data
+    except Exception as e:
+        LOGGER.error(f"Failed to fetch job details from Supabase: {e}")
+        return
+
+    # Prepare batch update for Airtable
+    updates_to_push = []
+    for job in supabase_jobs:
+        job_id = job.get("job_id")
+        airtable_record_id = job_id_map.get(job_id)
+
+        if not airtable_record_id:
+            continue
+
+        update_payload = {}
+        for supabase_col in UPDATABLE_FIELDS:
+            if supabase_col in job and supabase_col in mapping:
+                airtable_field_name = mapping[supabase_col]
+                update_payload[airtable_field_name] = job[supabase_col]
+
+        if update_payload:
+            updates_to_push.append(
+                {"id": airtable_record_id, "fields": update_payload}
+            )
+
+    if not updates_to_push:
+        LOGGER.info("No updates to push to Airtable.")
+        return
+
+    LOGGER.info(f"Preparing to update {len(updates_to_push)} records in Airtable.")
+
+    # Push updates to Airtable
+    try:
+        airtable_jobs_table.batch_update(updates_to_push)
+        LOGGER.info("Successfully pushed updates to Airtable.")
+    except Exception as e:
+        LOGGER.error(f"Error during Airtable batch update: {e}")
+
 
 
 def get_new_jobs_from_supabase() -> List[Dict[str, Any]]:
@@ -266,17 +381,11 @@ def main():
     LOGGER.info("Step 2: Deleting 'discarded' and 'lead' records from Airtable...")
     delete_old_airtable_records()
 
-    # 3. Fetch new and 'lead' jobs from Supabase
-    LOGGER.info("Step 3: Fetching new jobs from Supabase...")
-    new_jobs = get_new_jobs_from_supabase()
-    if not new_jobs:
-        LOGGER.info("No new jobs found in Supabase to sync. Exiting.")
-        return
+    # 2a. Clean up orphaned skills
+    LOGGER.info("Step 2a: Deleting orphaned skills from Airtable...")
+    delete_orphaned_skills()
 
-    # 4. Prioritize jobs (placeholder)
-    prioritized_jobs = prioritize_jobs_for_sync(new_jobs)
-
-    # Load schema mapping once
+    # Load schema mapping once, as it's needed by multiple functions
     try:
         with open(PROJECT_ROOT / "src/airtable/schema.json") as f:
             schema = json.load(f)
@@ -289,15 +398,29 @@ def main():
         LOGGER.error("schema.json not found. Cannot format records. Exiting.")
         return
 
+    # 3. Sync updates to existing Airtable records
+    LOGGER.info("Step 3: Syncing updates from Supabase to existing Airtable records...")
+    sync_updates_to_airtable(mapping)
+
+    # 4. Fetch new and 'lead' jobs from Supabase
+    LOGGER.info("Step 4: Fetching new jobs from Supabase...")
+    new_jobs = get_new_jobs_from_supabase()
+    if not new_jobs:
+        LOGGER.info("No new jobs found in Supabase to sync. Exiting.")
+        return
+
+    # 5. Prioritize jobs (placeholder)
+    prioritized_jobs = prioritize_jobs_for_sync(new_jobs)
+
     # Get existing skills map once
     existing_skills_map = get_all_existing_skills_map()
 
-    # 5. Format records for Airtable
-    LOGGER.info("Step 4: Formatting records for Airtable...")
+    # 6. Format records for Airtable
+    LOGGER.info("Step 6: Formatting records for Airtable...")
     formatted_records = format_records_for_airtable(prioritized_jobs, mapping, existing_skills_map)
 
-    # 6. Push new records to Airtable
-    LOGGER.info("Step 5: Pushing new records to Airtable...")
+    # 7. Push new records to Airtable
+    LOGGER.info("Step 7: Pushing new records to Airtable...")
     push_records_to_airtable(formatted_records)
 
     LOGGER.info("--- Sync Complete ---")

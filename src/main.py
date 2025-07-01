@@ -67,7 +67,7 @@ def main():
     LOGGER.info(f"Opening Airtable URL in Google Chrome: {airtable_url}")
     try:
         # Try to get the Chrome browser controller
-        browser = webbrowser.get('google-chrome')
+        browser = webbrowser.get('chrome')
         browser.open(airtable_url)
     except webbrowser.Error:
         LOGGER.warning("Google Chrome not found. Opening in default browser.")

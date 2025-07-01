@@ -41,4 +41,5 @@ dependencies:
       - pyarrow
       - supabase
       - gotrue
+      - pyyaml
 prefix: /opt/anaconda3/envs/upwork-scraper-env

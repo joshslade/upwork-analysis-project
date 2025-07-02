@@ -7,6 +7,7 @@ from pathlib import Path
 from . import config, scraping, processing, utils
 from .connectors import airtable
 
+
 def main():
     parser = argparse.ArgumentParser(description="Upwork Scraper CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -20,7 +21,7 @@ def main():
 
     # 'cleanup' command
     cleanup_parser = subparsers.add_parser("cleanup", help="Clean up generated files.")
-    cleanup_parser.add_argument("--raw_html_dir", type=Path, default=config.RAW_HTML_DIR)
+    cleanup_parser.add_argument("--raw_html_dir", type=Path, default=utils.get_dynamic_webscrapbook_dir())
     cleanup_parser.add_argument("--processed_json_dir", type=Path, default=config.PROCESSED_JSON_DIR)
 
     # 'sync-airtable' command
@@ -42,7 +43,7 @@ async def run_all():
     # Step 1: Extract jobs from raw HTML files
     logging.info("Extracting jobs from raw HTML files...")
     await scraping.extract_jobs_from_directory(
-        input_dir=config.RAW_HTML_DIR,
+        input_dir=utils.get_dynamic_webscrapbook_dir(),
         output_dir=config.PROCESSED_JSON_DIR,
         headless=True
     )

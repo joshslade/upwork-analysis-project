@@ -38,7 +38,8 @@ AIRTABLE_TABLE_ID_SKILLS = os.environ.get("AIRTABLE_TABLE_ID_SKILLS")
 # These are fields that are not typically manually edited in Airtable.
 UPDATABLE_FIELDS = [
     "proposals_tier",
-    "is_applied"
+    "is_applied",
+    "skills"
 ]
 
 
@@ -178,7 +179,7 @@ def delete_orphaned_skills():
     orphaned_skill_ids = [
         skill['id']
         for skill in all_skills
-        if not skill.get('fields', {}).get('Jobs')
+        if not skill.get('fields', {}).get('jobs')
     ]
 
     if not orphaned_skill_ids:
@@ -194,14 +195,14 @@ def delete_orphaned_skills():
         LOGGER.error(f"Error deleting orphaned skills from Airtable: {e}")
 
 
-def sync_updates_to_airtable(mapping: Dict[str, str]):
+def sync_updates_to_airtable(mapping: Dict[str, str], existing_skills_map: Dict[str, str]):
     """Syncs updates from Supabase to existing records in Airtable."""
     LOGGER.info("Fetching all remaining records from Airtable to check for updates.")
     try:
         airtable_records = airtable_jobs_table.all()
     except Exception as e:
         LOGGER.error(f"Failed to fetch records from Airtable: {e}")
-        return
+        raise SystemExit(1)
 
     if not airtable_records:
         LOGGER.info("No records found in Airtable to update.")
@@ -214,8 +215,8 @@ def sync_updates_to_airtable(mapping: Dict[str, str]):
     }
 
     if not job_id_map:
-        LOGGER.warning("No records with job_id found in Airtable.")
-        return
+        LOGGER.error("No records with job_id found in Airtable.")
+        raise SystemExit(1)
 
     LOGGER.info(f"Found {len(job_id_map)} records in Airtable to check for updates.")
 
@@ -230,28 +231,21 @@ def sync_updates_to_airtable(mapping: Dict[str, str]):
         supabase_jobs = supabase_response.data
     except Exception as e:
         LOGGER.error(f"Failed to fetch job details from Supabase: {e}")
-        return
+        raise SystemExit(1)
 
+    # Format jobs for Airtable (including skills)
+    formatted_records = format_records_for_airtable(supabase_jobs, mapping, existing_skills_map)
     # Prepare batch update for Airtable
     updates_to_push = []
-    for job in supabase_jobs:
+    for job, formatted in zip(supabase_jobs, formatted_records):
         job_id = job.get("job_id")
         airtable_record_id = job_id_map.get(job_id)
-
         if not airtable_record_id:
             continue
-
-        update_payload = {}
-        for supabase_col in UPDATABLE_FIELDS:
-            if supabase_col in job and supabase_col in mapping:
-                airtable_field_name = mapping[supabase_col]
-                update_payload[airtable_field_name] = job[supabase_col]
-
-        if update_payload:
-            updates_to_push.append(
-                {"id": airtable_record_id, "fields": update_payload}
-            )
-
+        updates_to_push.append({
+            "id": airtable_record_id,
+            "fields": formatted["fields"]
+        })
     if not updates_to_push:
         LOGGER.info("No updates to push to Airtable.")
         return
@@ -333,18 +327,48 @@ def get_or_create_skill_record_ids(skill_names: List[str], existing_skills_map: 
 def format_records_for_airtable(jobs: List[Dict[str, Any]], mapping: Dict[str, str], existing_skills_map: Dict[str, str]) -> List[Dict[str, Any]]:
     """Formats Supabase job data for the Airtable API using Field ID mapping."""
     formatted_records = []
+    
+    # 1. Collect all unique skill names across all jobs
+    all_skill_names = set()
+    for job in jobs:
+        skill_names = job.get("skills", [])
+        all_skill_names.update(skill_names)
+
+    # 2. Determine which skills need to be created
+    skills_to_create = [
+        {"Name": name}
+        for name in all_skill_names
+        if name and name not in existing_skills_map
+    ]
+        # 3. Batch-create missing skills and update existing_skills_map
     total_new_skills_created = 0
+    if skills_to_create:
+        try:
+            created_records = airtable_skills_table.batch_create(skills_to_create)
+            total_new_skills_created = len(created_records)
+            for rec in created_records:
+                skill_name = rec["fields"]["Name"]
+                skill_id = rec["id"]
+                existing_skills_map[skill_name] = skill_id
+        except Exception as e:
+            LOGGER.error(f"Error creating new skill records: {e}")
+
+    if total_new_skills_created > 0:
+        LOGGER.info(f"Total new skill records created: {total_new_skills_created}")
+
 
     for job in jobs:
         airtable_fields = {}
         for supabase_col, airtable_name in mapping.items():
             if supabase_col == "skills":
                 skill_names = job.get(supabase_col, [])
-                if skill_names:
-                    skill_record_ids, new_skills_count = get_or_create_skill_record_ids(skill_names, existing_skills_map)
-                    total_new_skills_created += new_skills_count
-                    if skill_record_ids:
-                        airtable_fields[airtable_name] = skill_record_ids
+                skill_record_ids = [
+                    existing_skills_map[name]
+                    for name in skill_names
+                    if name in existing_skills_map
+                ]
+                if skill_record_ids:
+                    airtable_fields[airtable_name] = skill_record_ids
             elif supabase_col in job and job[supabase_col] is not None:
                 airtable_fields[airtable_name] = job[supabase_col]
         formatted_records.append({"fields": airtable_fields})
@@ -398,14 +422,18 @@ def sync():
             field["supabase_source_column"]: field["name"]
             for field in schema["fields"]
             if field.get("supabase_source_column") and field.get("type") != "lastModifiedTime"
-        }
+        } # dictionary of supabase column : airtable column
     except FileNotFoundError:
         LOGGER.error("airtable_schema.json not found. Cannot format records. Exiting.")
         return
 
+    # Get existing skills map once
+    existing_skills_map = get_all_existing_skills_map() # dict of Skill Name : record_ID
+
     # 3. Sync updates to existing Airtable records
     LOGGER.info("Step 3: Syncing updates from Supabase to existing Airtable records...")
-    sync_updates_to_airtable(mapping)
+    mapping_to_sync = {k:mapping[k] for k in UPDATABLE_FIELDS if k in mapping}
+    sync_updates_to_airtable(mapping_to_sync, existing_skills_map)
 
     # 4. Fetch new and 'lead' jobs from Supabase
     LOGGER.info("Step 4: Fetching new jobs from Supabase...")
@@ -417,8 +445,6 @@ def sync():
     # 5. Prioritize jobs (placeholder)
     prioritized_jobs = prioritize_jobs_for_sync(new_jobs)
 
-    # Get existing skills map once
-    existing_skills_map = get_all_existing_skills_map()
 
     # 6. Format records for Airtable
     LOGGER.info("Step 6: Formatting records for Airtable...")

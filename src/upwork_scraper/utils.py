@@ -1,3 +1,4 @@
+import datetime
 import logging
 from pathlib import Path
 
@@ -24,3 +25,11 @@ def cleanup_files(directory: Path, extension: str):
             LOGGER.error(f"Error deleting {f.name}: {e}")
 
     LOGGER.info(f"Cleanup complete for {directory}.")
+
+def get_dynamic_webscrapbook_dir(base_dir: Path = Path.home() / "Downloads/WebScrapBook/Upwork") -> Path:
+    """
+    Returns the WebScrapBook Upwork directory for today's date in YYYY-MM-DD format.
+    Example: ~/Downloads/WebScrapBook/Upwork/2025-07-02
+    """
+    today_str = datetime.date.today().strftime("%Y-%m-%d")
+    return base_dir / today_str

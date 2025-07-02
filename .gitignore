@@ -11,3 +11,10 @@ __pycache__/
 # Folders
 venv/
 data/
+
+.dbeaver/
+.project
+
+# Ignore the pytest cache directory
+.pytest_cache/
+database/.project

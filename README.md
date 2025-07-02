@@ -1,4 +1,4 @@
-# 🕸️ Upwork Job Scraper ➜ Airtable Visual Dashboard
+# 🕸️ Upwork Job Analysis ➜ Airtable Visual Dashboard
 
 > **One‑click insight into the freelance projects that matter to me.**
 
@@ -40,36 +40,45 @@ graph TD
 
 ## 🗂️ Project & File Structure
 
-```text
-upwork_scraper_airtable/
-├── environment.yml            # Conda environment spec
-├── README.md                  # <- you are here
-├── .gitignore                 # Exclude venv, data, secrets
+The project is organized into a modular and scalable structure, separating concerns into logical components.
+
+```
+upwork_scraper/
+├── .env.example             # Example environment variables file
+├── .gitignore               # Git ignore rules
+├── environment.yml          # Conda environment definition
+├── pytest.ini               # Pytest configuration
+├── README.md                # Project README
 ├── data/
-│   ├── raw_html/              # Manual downloads (HTML files)
-│   └── processed/             # Extracted JSON & parquet/CSV
+│   ├── processed/           # Stores processed JSON job data
+│   ├── raw_html/            # Stores manually downloaded raw HTML files
+│   ├── temp/                # Temporary files (e.g., single HTML extraction output)
+│   └── search_urls.yml      # YAML file for managing search URLs
+├── database/
+│   └── schemas/             # SQL schemas for database tables (e.g., Supabase)
+│       ├── 01_create_scrape_requests_table.sql
+│       ├── 02_create_jobs_table.sql
+│       └── 03_create_search_results_table.sql
 ├── docs/
-│   └── walkthrough.md         # Guide on how to use the tool
-├── notebooks/                 # Exploration & visual checks
-│   └── exploration.ipynb
+│   ├── walkthrough.md       # Original project walkthrough guide
+│   └── PROJECT_DOCS.md      # This comprehensive documentation file
+├── notebooks/
+│   └── html_parsing_test.ipynb # Jupyter notebook for HTML parsing tests
 ├── src/
-│   ├── __init__.py
-│   ├── config.py              # Paths, Airtable keys (loaded from .env)
-│   ├── extract_jobs.py        # Playwright + Nuxt JSON extractor
-│   ├── process_jobs.py        # Combine & clean data
-│   ├── airtable/
-│   │   ├── __init__.py
-│   │   ├── archive.py         # archives flagged records from Airtable
-│   │   └── push.py            # Upload dataframe to Airtable
-│   ├── supabase/
-│   │   ├── __init__.py
-│   │   └── push.py            # Upload dataframe to Supabase
-│   └── utils/
-│       ├── __init__.py
-│       └── logger.py
-└── tests/
-    ├── test_extract.py
-    └── test_process.py
+│   └── upwork_scraper/      # Main Python package for the application
+│       ├── __init__.py      # Package initializer
+│       ├── cli.py           # Central Command-Line Interface (CLI) entry point
+│       ├── config.py        # Centralized application configuration and path constants
+│       ├── scraping.py      # Functions for HTML parsing, job extraction, and URL handling
+│       ├── processing.py    # Functions for data flattening, metadata parsing, and data preparation
+│       ├── connectors/      # Sub-package for external service integrations
+│       │   ├── __init__.py
+│       │   ├── airtable.py  # Logic for Airtable API interactions (sync, push, update)
+│       │   └── supabase.py  # Logic for Supabase API interactions (insert, update, push)
+│       └── utils.py         # General utility functions (e.g., file cleanup)
+└── tests/                   # Unit and integration tests
+    ├── test_processing.py
+    └── test_scraping.py
 ```
 
 ---
@@ -108,7 +117,7 @@ upwork_scraper_airtable/
 - [x] Initialise Git repo & push to GitHub
 - [x] Create Conda environment (`environment.yml`)
 - [x] Draft `.gitignore` & `.env.example`
-- [ ] Document saved‑search URLs
+- [x] Document saved‑search URLs
 - [x] Prototype `extract_jobs.py` with Playwright
 - [x] Extract JSON and save per‑page files
 - [x] Build `process_jobs.py` to combine JSON ➜ DataFrame
@@ -116,33 +125,15 @@ upwork_scraper_airtable/
 - [x] Implement `airtable/push.py`
 - [x] Design Supabase base & fields
 - [x] Implement `supabase/push.py`
-- [ ] Develop workflow and archive automations `airtable/archive.py`
+- [x] Develop workflow and archive automations `airtable/archive.py`
 - [x] Write unit tests (`tests/`)
-- [ ] Run first full workflow & verify Airtable rows
-- [ ] Automate cleanup of HTML files
+- [x] Run first full workflow & verify Airtable rows
+- [x] Automate cleanup of HTML files
 - [ ] Refine README, add screenshots, publish demo GIF
 
 ---
 
-## ✨ Getting Started (Quick Run)
-
-```bash
-# 1. Clone and set up env
-git clone https://github.com/<your‑user>/upwork_scraper_airtable.git
-cd upwork_scraper_airtable
-conda env create -f environment.yml
-conda activate upwork-scraper
-
-# 2. Place your downloaded HTML in data/raw_html/
-# 3. Run extraction & push
-python -m src.extract_jobs
-python -m src.process_jobs
-python -m src.airtable.push
-```
-
-> **Tip:** Add `AIRTABLE_API_KEY` and `AIRTABLE_BASE_ID` to your `.env` before pushing.
-
----
+For comprehensive technical documentation and detailed walkthroughs, see [PROJECT_DOCS.md](docs/PROJECT_DOCS.md).
 
 Happy scraping — and may your Upwork feed finally feel like **your** feed!
 

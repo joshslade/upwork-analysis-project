@@ -18,3 +18,7 @@ data/
 # Ignore the pytest cache directory
 .pytest_cache/
 database/.project
+
+.vscode/
+
+.DS_Store

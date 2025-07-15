@@ -200,7 +200,7 @@ Runs the full ETL workflow, from HTML extraction to Supabase loading and Airtabl
 
 *   **Usage:**
     ```bash
-    python -m src.upwork_scraper run-all
+    python -m src.upwork_scraper.cli run-all
     ```
 *   **Options:** None.
 
@@ -210,7 +210,7 @@ Opens a list of search URLs in new Firefox tabs. URLs are read from `data/search
 
 *   **Usage:**
     ```bash
-    python -m src.upwork_scraper open-urls
+    python -m src.upwork_scraper.cli open-urls
     ```
 *   **Options:**
     *   `--file <path>`: Specify the path to the YAML file containing the URLs.
@@ -226,7 +226,7 @@ Deletes generated HTML files from the `raw_html` directory and JSON files from t
 
 *   **Usage:**
     ```bash
-    python -m src.upwork_scraper cleanup
+    python -m src.upwork_scraper.cli cleanup
     ```
 *   **Options:**
     *   `--raw_html_dir <path>`: Specify the directory containing raw HTML files to delete.

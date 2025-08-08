@@ -1,0 +1,178 @@
+{
+  "fields": [
+    {
+      "type": "singleLineText",
+      "name": "job_id",
+      "description": null,
+      "supabase_source_column": "job_id"
+    },
+    {
+      "type": "multilineText",
+      "name": "title",
+      "description": null,
+      "supabase_source_column": "title"
+    },
+    {
+      "type": "multilineText",
+      "name": "description",
+      "description": null,
+      "supabase_source_column": "description"
+    },
+    {
+      "type": "button",
+      "name": "Open URL",
+      "description": null,
+      "supabase_source_column": "url"
+    },
+    {
+      "type": "singleSelect",
+      "name": "Status",
+      "description": null,
+      "supabase_source_column": "airtable_status"
+    },
+    {
+      "type": "singleSelect",
+      "name": "engagement",
+      "description": null,
+      "supabase_source_column": "engagement"
+    },
+    {
+      "type": "singleSelect",
+      "name": "proposalsTier",
+      "description": null,
+      "supabase_source_column": "proposals_tier"
+    },
+    {
+      "type": "singleSelect",
+      "name": "tierText",
+      "description": null,
+      "supabase_source_column": "tier_text"
+    },
+    {
+      "type": "singleLineText",
+      "name": "client_country",
+      "description": null,
+      "supabase_source_column": "client_country"
+    },
+    {
+      "type": "currency",
+      "name": "client_totalSpent",
+      "description": null,
+      "supabase_source_column": "client_total_spent"
+    },
+    {
+      "type": "checkbox",
+      "name": "client_payVerified",
+      "description": null,
+      "supabase_source_column": "client_payment_verified"
+    },
+    {
+      "type": "number",
+      "name": "client_reviews",
+      "description": null,
+      "supabase_source_column": "client_total_reviews"
+    },
+    {
+      "type": "number",
+      "name": "client_feedback",
+      "description": null,
+      "supabase_source_column": "client_avg_feedback"
+    },
+    {
+      "type": "currency",
+      "name": "fixed_budget",
+      "description": null,
+      "supabase_source_column": "fixed_budget"
+    },
+    {
+      "type": "currency",
+      "name": "hourly_budget_min",
+      "description": null,
+      "supabase_source_column": "hourly_budget_min"
+    },
+    {
+      "type": "currency",
+      "name": "hourly_budget_max",
+      "description": null,
+      "supabase_source_column": "hourly_budget_max"
+    },
+    {
+      "type": "singleSelect",
+      "name": "currency",
+      "description": null,
+      "supabase_source_column": "currency"
+    },
+    {
+      "type": "multipleRecordLinks",
+      "name": "skills",
+      "description": null,
+      "supabase_source_column": "skills"
+    },
+    {
+      "type": "url",
+      "name": "url",
+      "description": null,
+      "supabase_source_column": "url"
+    },
+    {
+      "type": "dateTime",
+      "name": "createdOn",
+      "description": null,
+      "supabase_source_column": "created_on"
+    },
+    {
+      "type": "dateTime",
+      "name": "publishedOn",
+      "description": null,
+      "supabase_source_column": "published_on"
+    },
+    {
+      "type": "dateTime",
+      "name": "renewedOn",
+      "description": null,
+      "supabase_source_column": "renewed_on"
+    },
+    {
+      "type": "singleLineText",
+      "name": "job_type",
+      "description": null,
+      "supabase_source_column": "job_type"
+    },
+    {
+      "type": "singleSelect",
+      "name": "durationLabel",
+      "description": null,
+      "supabase_source_column": "duration_label"
+    },
+    {
+      "type": "number",
+      "name": "connectPrice",
+      "description": null,
+      "supabase_source_column": "connect_price"
+    },
+    {
+      "type": "multilineText",
+      "name": "relevanceEncoded",
+      "description": null,
+      "supabase_source_column": "relevance_encoded"
+    },
+    {
+      "type": "checkbox",
+      "name": "is_applied",
+      "description": null,
+      "supabase_source_column": "is_applied"
+    },
+    {
+      "type": "number",
+      "name": "weekly_budget",
+      "description": null,
+      "supabase_source_column": "weekly_budget"
+    },
+    {
+      "type": "lastModifiedTime",
+      "name": "Last Modified",
+      "description": null,
+      "supabase_source_column": "airtable_status_change_time"
+    }
+  ]
+}

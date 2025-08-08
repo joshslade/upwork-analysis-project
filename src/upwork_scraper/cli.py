@@ -57,14 +57,7 @@ async def run_all():
     airtable.sync()
 
     # Step 4: Open Airtable URL
-    airtable_url = "https://airtable.com/appnQcUCcFVuyYrQl/pagSdGUUho0LzommN?OXEiR=sfsDR0TH4uaAwBSnR&OXEiR%3Agroup=eyJwZWw0ZE1UMlVsVHAyZWM3QSI6W3siY29sdW1uSWQiOiJmbGRuYkhYNGpoTHpnMFM0TyIsImFzY2VuZGluZyI6ZmFsc2V9XX0"
-    logging.info(f"Opening Airtable URL in Google Chrome: {airtable_url}")
-    try:
-        browser = webbrowser.get('chrome')
-        browser.open(airtable_url)
-    except webbrowser.Error:
-        logging.warning("Google Chrome not found. Opening in default browser.")
-        webbrowser.open(airtable_url)
+    logging.info("Workflow complete. Please open your Airtable base to review the new jobs.")
 
 if __name__ == "__main__":
     main()

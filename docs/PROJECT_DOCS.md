@@ -3,24 +3,32 @@
 ## Table of Contents
 
 1.  [Project Overview](#1-project-overview)
+    *   [Why this exists](#why-this-exists)
 2.  [Project Structure](#2-project-structure)
 3.  [Installation & Setup](#3-installation--setup)
-4.  [Configuration](#4-configuration)
-    *   [.env Variables](#41-env-variables)
-    *   [Application Configuration (config.py)](#42-application-configuration-configpy)
-5.  [Core Workflows & Data Flow](#5-core-workflows--data-flow)
-    *   [5.1 ETL Workflow](#51-etl-workflow)
-    *   [5.2 Airtable Sync Workflow](#52-airtable-sync-workflow)
-    *   [5.3 User Interaction Workflow](#53-user-interaction-workflow)
-6.  [Command-Line Interface (CLI) Usage](#6-command-line-interface-cli-usage)
+4.  [Manual HTML Download with WebScrapBook](#4-manual-html-download-with-webscrapbook)
+    *   [4.1 Why WebScrapBook?](#41-why-webscrapbook)
+    *   [4.2 Installation and Configuration](#42-installation-and-configuration)
+    *   [4.3 Daily Workflow](#43-daily-workflow)
+5.  [Database & Service Setup](#5-database--service-setup)
+    *   [5.1 Supabase Setup](#51-supabase-setup)
+    *   [5.2 Airtable Setup](#52-airtable-setup)
+6.  [Configuration](#6-configuration)
+    *   [6.1 .env Variables](#61-env-variables)
+    *   [6.2 Application Configuration (config.py)](#62-application-configuration-configpy)
+7.  [Core Workflows & Data Flow](#7-core-workflows--data-flow)
+    *   [7.1 ETL Workflow](#71-etl-workflow)
+    *   [7.2 Airtable Sync Workflow](#72-airtable-sync-workflow)
+    *   [7.3 User Interaction Workflow](#73-user-interaction-workflow)
+8.  [Command-Line Interface (CLI) Usage](#8-command-line-interface-cli-usage)
     *   [`run-all`](#run-all)
     *   [`open-urls`](#open-urls)
     *   [`cleanup`](#cleanup)
     *   [`sync-airtable`](#sync-airtable)
-7.  [Troubleshooting](#7-troubleshooting)
-8.  [Extending & Customizing](#8-extending--customizing)
-9.  [Recommended Enhancements & Next Steps](#9-recommended-enhancements--next-steps)
-10. [License](#10-license)
+9.  [Troubleshooting](#9-troubleshooting)
+10. [Extending & Customizing](#10-extending--customizing)
+11. [Recommended Enhancements & Next Steps](#11-recommended-enhancements--next-steps)
+12. [License](#12-license)
 
 ---
 
@@ -44,14 +52,16 @@ The project is organized into a modular and scalable structure, separating conce
 upwork_scraper/
 ├── .env.example             # Example environment variables file
 ├── .gitignore               # Git ignore rules
+├── config/
+│   ├── airtable_schema.json # Defines the mapping between Supabase columns and Airtable fields.
+│   └── search_urls.yml      # A list of Upwork search URLs to be opened with the `open-urls` command.
 ├── environment.yml          # Conda environment definition
 ├── pytest.ini               # Pytest configuration
 ├── README.md                # Project README
 ├── data/
 │   ├── processed/           # Stores processed JSON job data
 │   ├── raw_html/            # Stores manually downloaded raw HTML files
-│   ├── temp/                # Temporary files (e.g., single HTML extraction output)
-│   └── search_urls.yml      # YAML file for managing search URLs
+│   └── temp/                # Temporary files (e.g., single HTML extraction output)
 ├── database/
 │   └── schemas/             # SQL schemas for database tables (e.g., Supabase)
 │       ├── 01_create_scrape_requests_table.sql
@@ -122,9 +132,128 @@ To get the project up and running, follow these steps:
 
 ---
 
-## 4. Configuration
+## 4. Manual HTML Download with WebScrapBook
 
-### 4.1 .env Variables
+This project relies on manually downloaded HTML files from Upwork. To ensure the scraper can correctly parse the job data, it is crucial to use the **WebScrapBook** browser extension for Firefox and configure it correctly.
+
+### 4.1 Why WebScrapBook?
+
+WebScrapBook allows you to save a complete, interactive version of a webpage, which is essential for our scraper to access the necessary JavaScript objects containing the job data. Simple "Save Page As" from the browser will not work.
+
+### 4.2 Installation and Configuration
+
+1.  **Install WebScrapBook:**
+    *   Get the extension from the [Firefox Add-ons store](https://addons.mozilla.org/en-US/firefox/addon/webscrapbook/).
+
+2.  **Configure WebScrapBook:**
+    *   After installing, open the WebScrapBook options.
+    *   You can import the recommended settings from the `config/webscrapbook.options.20250808.json` file located in this project. This file is pre-configured to save the HTML files in the correct format and location.
+    *   To import, go to the "UI" tab in the WebScrapBook options, click "Import settings", and select the `webscrapbook.options.20250808.json` file.
+
+### 4.3 Daily Workflow
+
+1.  **Open Search URLs:**
+    *   Run the `open-urls` command to open your saved Upwork searches in Firefox:
+        ```bash
+        python -m src.upwork_scraper.cli open-urls
+        ```
+
+2.  **Capture Tabs:**
+    *   Once all the search result tabs are open, right-click on any of the tabs.
+    *   From the context menu, select **WebScrapBook** -> **Capture Tabs**.
+    *   This will open a dialog. Click **"Capture"** to download the HTML for all open tabs.
+
+3.  **Verify Download:**
+    *   The HTML files will be saved in the `~/WebScrapBook/Upwork/YYYY-MM-DD/` directory, with a subdirectory for each day. The scraper is configured to automatically look for files in this location.
+
+---
+
+## 5. Database & Service Setup
+
+Before you can run the application, you need to set up the required external services: Supabase for data archiving and Airtable for interactive review.
+
+### 5.1 Supabase Setup
+
+Supabase will store all historical job data.
+
+1.  **Create a Supabase Account and Project:**
+    *   Go to [supabase.com](https://supabase.com) and sign up.
+    *   Create a new project. You will need to give it a name, generate a secure database password, and choose a region.
+
+2.  **Create Database Tables:**
+    *   Navigate to the **SQL Editor** in your Supabase project dashboard.
+    *   Open the following files from this project's `database/schemas/` directory and execute the SQL commands in the Supabase SQL Editor. It is recommended to run them in the numbered order:
+        1.  `01_create_scrape_requests_table.sql`
+        2.  `02_create_jobs_table.sql`
+        3.  `03_create_search_results_table.sql`
+
+3.  **Get Your Credentials:**
+    *   Go to **Project Settings > API**.
+    *   You will need the **Project URL** and the **`anon` public API Key**. These will be used for the `SUPABASE_URL` and `SUPABASE_KEY` environment variables, respectively.
+
+### 5.2 Airtable Setup
+
+Airtable provides the visual interface for triaging and tracking job leads.
+
+1.  **Create an Airtable Account:**
+    *   Go to [airtable.com](https://airtable.com) and sign up.
+
+2.  **Create a New Base:**
+    *   From your Airtable dashboard, click **"Add a base"** and choose **"Start from scratch."**
+    *   Give the base a name (e.g., "Upwork Job Tracker").
+
+3.  **Create Tables:**
+    *   You will need to create two tables within your new base. Rename the default "Table 1" and add a new table to match these exact names:
+        1.  `Jobs`
+        2.  `Skills`
+
+4.  **Configure the `Jobs` Table:**
+    *   Delete any default fields.
+    *   Create the fields listed below. The **Field Name** and **Field Type** must match exactly for the script to work correctly. The field names are derived from `config/airtable_schema.json`.
+
+| Field Name | Field Type | Notes |
+|---|---|---|
+| `job_id` | `Single line text` | Primary key from Upwork. |
+| `title` | `Long text` | |
+| `description` | `Long text` | |
+| `url` | `URL` | |
+| `Status` | `Single select` | Options: `New`, `Shortlisted`, `Applied`, `Interviewing`, `Contract`, `Discarded` |
+| `engagement` | `Single select` | |
+| `proposalsTier` | `Single select` | |
+| `tierText` | `Single select` | |
+| `client_country` | `Single line text` | |
+| `client_totalSpent` | `Currency` | |
+| `client_payVerified` | `Checkbox` | |
+| `client_reviews` | `Number` | |
+| `client_feedback` | `Number` | |
+| `fixed_budget` | `Currency` | |
+| `hourly_budget_min` | `Currency` | |
+| `hourly_budget_max` | `Currency` | |
+| `currency` | `Single select` | |
+| `skills` | `Link to another record` | Link to the `Skills` table. |
+| `createdOn` | `Date` | |
+| `publishedOn` | `Date` | |
+| `renewedOn` | `Date` | |
+| `job_type` | `Single line text` | |
+| `durationLabel` | `Single select` | |
+| `connectPrice` | `Number` | |
+| `is_applied` | `Checkbox` | |
+| `weekly_budget` | `Number` | |
+| `Last Modified` | `Last modified time` | |
+
+5.  **Configure the `Skills` Table:**
+    *   The `Skills` table only needs one primary field: `Name` (`Single line text`). The script will automatically create and link skills.
+
+6.  **Get Your Credentials:**
+    *   **API Key:** Go to your [Airtable account page](https://airtable.com/account) to generate an API key. This is your `AIRTABLE_API_KEY`.
+    *   **Base ID:** Find your Base ID from the [Airtable API documentation](https://airtable.com/api) for your newly created base. It typically starts with `app...`. This is your `AIRTABLE_BASE_ID`.
+    *   **Table IDs:** From the same API documentation page, find the IDs for your `Jobs` and `Skills` tables. They typically start with `tbl...`. These are your `AIRTABLE_TABLE_ID_JOBS` and `AIRTABLE_TABLE_ID_SKILLS`.
+
+---
+
+## 6. Configuration
+
+### 6.1 .env Variables
 
 The following environment variables are required and should be set in your `.env` file:
 
@@ -135,26 +264,35 @@ The following environment variables are required and should be set in your `.env
 *   **`AIRTABLE_TABLE_ID_JOBS`**: The ID of your Airtable "Jobs" table (e.g., `tblXXXXXXXXXXXXXX`).
 *   **`AIRTABLE_TABLE_ID_SKILLS`**: The ID of your Airtable "Skills" table.
 
-### 4.2 Application Configuration (config.py)
+### 6.2 Application Configuration (config.py)
 
-The `src/upwork_scraper/config.py` file centralizes various path constants used throughout the application. These are derived from the `PROJECT_ROOT` and should generally not need manual modification unless your project's internal directory structure changes.
+The `src/upwork_scraper/config.py` file centralizes various path constants used throughout the application. These are derived from the `PROJECT_ROOT` and should generally not need manual modification.
+
+The two key configuration files are stored in the `config/` directory:
+
+*   **`config/search_urls.yml`**: This file contains a list of your saved Upwork search URLs. The `open-urls` command uses this file to quickly open all your searches in a browser for manual HTML downloading.
+*   **`config/airtable_schema.json`**: This file defines the mapping between Supabase database columns and your Airtable base's field names. It is critical for ensuring data is correctly pushed to Airtable. If you change field names in Airtable, you must update this file to match.
+
+The paths to these files and other important locations are defined in `config.py`:
 
 *   `PROJECT_ROOT`: Absolute path to the project's root directory.
+*   `CONFIG_DIR`: Path to the `config/` directory.
 *   `DATA_DIR`: Path to the `data/` directory.
 *   `RAW_HTML_DIR`: Path to `data/raw_html/`.
 *   `PROCESSED_JSON_DIR`: Path to `data/processed/json/`.
 *   `TEMP_DIR`: Path to `data/temp/`.
-*   `SEARCH_URLS_FILE`: Path to `data/search_urls.yml`.
+*   `SEARCH_URLS_FILE`: Path to `config/search_urls.yml`.
 *   `DOTENV_PATH`: Path to the `.env` file.
-*   `AIRTABLE_SCHEMA`: Path to `data/airtable_schema.json`.
+*   `AIRTABLE_SCHEMA`: Path to `config/airtable_schema.json`.
+*   `WEBSCRAPBOOK_BASE_DIR`: The base directory where WebScrapBook saves HTML files. Defaults to `~/Downloads/WebScrapBook/Upwork`.
 
 ---
 
-## 5. Core Workflows & Data Flow
+## 7. Core Workflows & Data Flow
 
 The application automates the process of extracting Upwork job data and syncing it with Airtable.
 
-### 5.1 ETL Workflow
+### 7.1 ETL Workflow
 
 This workflow handles the extraction, transformation, and loading of job data.
 
@@ -165,7 +303,7 @@ This workflow handles the extraction, transformation, and loading of job data.
     3.  **Loading (`connectors/supabase.py`):** The processed job data is then upserted into the `jobs` table in your Supabase database. Metadata about the scrape request and search results are also recorded in separate Supabase tables (`scrape_requests`, `search_results`).
 *   **Output:** Cleaned job data in Supabase, and JSON files in `data/processed/json/` (one per HTML input).
 
-### 5.2 Airtable Sync Workflow
+### 7.2 Airtable Sync Workflow
 
 This workflow ensures that your Airtable base is synchronized with the latest job data and your manual triage decisions.
 
@@ -180,7 +318,7 @@ This workflow ensures that your Airtable base is synchronized with the latest jo
     7.  **Push New Records to Airtable (`airtable.py`):** The newly formatted job records are pushed to the Airtable "Jobs" table.
 *   **Output:** Synchronized Airtable base reflecting both new jobs and updated attributes for existing jobs, as well as your manual triage decisions.
 
-### 5.3 User Interaction Workflow
+### 7.3 User Interaction Workflow
 
 1.  **Manual HTML Download:** User manually downloads HTML files from Upwork saved searches into `data/raw_html/`.
 2.  **Run `run-all` CLI command:** Initiates the automated ETL and Airtable sync process.
@@ -190,7 +328,7 @@ This workflow ensures that your Airtable base is synchronized with the latest jo
 
 ---
 
-## 6. Command-Line Interface (CLI) Usage
+## 8. Command-Line Interface (CLI) Usage
 
 The project provides a central CLI tool (`src/upwork_scraper/cli.py`) to manage various tasks. All commands are executed using `python -m src.upwork_scraper <command> [options]`.
 
@@ -206,7 +344,7 @@ Runs the full ETL workflow, from HTML extraction to Supabase loading and Airtabl
 
 ### `open-urls`
 
-Opens a list of search URLs in new Firefox tabs. URLs are read from `data/search_urls.yml`. You can comment out URLs in the YAML file to exclude them.
+Opens a list of search URLs in new Firefox tabs. URLs are read from `config/search_urls.yml`. You can comment out URLs in the YAML file to exclude them.
 
 *   **Usage:**
     ```bash
@@ -214,7 +352,7 @@ Opens a list of search URLs in new Firefox tabs. URLs are read from `data/search
     ```
 *   **Options:**
     *   `--file <path>`: Specify the path to the YAML file containing the URLs.
-        *   **Default:** `data/search_urls.yml`
+        *   **Default:** `config/search_urls.yml`
         *   **Example:**
             ```bash
             python -m src.upwork_scraper open-urls --file /path/to/my_custom_urls.yml
@@ -254,7 +392,7 @@ Performs the Airtable synchronization process. This includes backing up Airtable
 
 ---
 
-## 7. Troubleshooting
+## 9. Troubleshooting
 
 *   **`Playwright Sync API inside the asyncio loop` error:** This indicates a mismatch between synchronous Playwright calls and the asynchronous `asyncio` event loop. Ensure all Playwright operations are `await`ed within `async def` functions. (This has been addressed in the refactoring).
 *   **No JSON extracted / Playwright timeout:**
@@ -262,14 +400,14 @@ Performs the Airtable synchronization process. This includes backing up Airtable
     *   **Fix:** Update the extraction logic in `src/upwork_scraper/scraping.py` (`extract_jobs_from_nuxt`, `extract_from_html`). Increase the `timeout` parameter in `scraping.extract_jobs_from_directory` if it's a slow network.
 *   **Airtable 422 error (Unprocessable Entity):**
     *   **Likely Cause:** Field mismatch between your Supabase data and Airtable table schema.
-    *   **Fix:** Verify `src/airtable/schema.json` accurately reflects your Airtable table's field names and types. Ensure data types are compatible.
+    *   **Fix:** Verify `config/airtable_schema.json` accurately reflects your Airtable table's field names and types. Ensure data types are compatible.
 *   **Supabase logging is too verbose:**
     *   **Likely Cause:** Default logging levels for `supabase-py` and `httpx` are set to `INFO`.
     *   **Fix:** The application now quiets these loggers to `WARNING` level in `src/upwork_scraper/connectors/airtable.py` and `src/upwork_scraper/connectors/supabase.py`.
 
 ---
 
-## 8. Extending & Customizing
+## 10. Extending & Customizing
 
 The modular design facilitates easy extension:
 
@@ -280,7 +418,7 @@ The modular design facilitates easy extension:
 
 ---
 
-## 9. Recommended Enhancements & Next Steps
+## 11. Recommended Enhancements & Next Steps
 
 *   **Automated HTML Downloads:** Explore Playwright or Selenium to automate the process of navigating to Upwork saved searches and downloading HTML files, reducing manual effort.
 *   **Error Handling & Retries:** Implement more robust error handling and retry mechanisms for network operations (Playwright, Supabase, Airtable) to improve resilience.
@@ -294,10 +432,10 @@ The modular design facilitates easy extension:
 
 ---
 
-## 10. License
+## 12. License
 
 MIT
 
 ---
 
-*Last updated: 2025-07-01*
+*Last updated: 2025-08-08*

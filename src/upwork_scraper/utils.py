@@ -26,7 +26,9 @@ def cleanup_files(directory: Path, extension: str):
 
     LOGGER.info(f"Cleanup complete for {directory}.")
 
-def get_dynamic_webscrapbook_dir(base_dir: Path = Path.home() / "Downloads/WebScrapBook/Upwork") -> Path:
+from . import config
+
+def get_dynamic_webscrapbook_dir(base_dir: Path = config.WEBSCRAPBOOK_BASE_DIR) -> Path:
     """
     Returns the WebScrapBook Upwork directory for today's date in YYYY-MM-DD format.
     Example: ~/Downloads/WebScrapBook/Upwork/2025-07-02

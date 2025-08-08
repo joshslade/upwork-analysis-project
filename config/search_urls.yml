@@ -1,0 +1,24 @@
+# Active search URLs
+urls:
+  # data scientist python
+  - https://www.upwork.com/nx/search/jobs/?payment_verified=1&per_page=50&sort=recency&q=data%20scientist%20python&page=1
+  - https://www.upwork.com/nx/search/jobs/?payment_verified=1&per_page=50&sort=recency&q=data%20scientist%20python&page=2
+  - https://www.upwork.com/nx/search/jobs/?payment_verified=1&per_page=50&sort=recency&q=data%20scientist%20python&page=3
+  
+  # data python not agent - this one isnt good
+  # - https://www.upwork.com/nx/search/jobs/?payment_verified=1&per_page=50&sort=recency&proposals=0-4&q=%28data%20python%29%20AND%20NOT%20agent&page=1
+  # - https://www.upwork.com/nx/search/jobs/?payment_verified=1&per_page=50&sort=recency&proposals=0-4&q=%28data%20python%29%20AND%20NOT%20agent&page=2
+  # - https://www.upwork.com/nx/search/jobs/?payment_verified=1&per_page=50&sort=recency&proposals=0-4&q=%28data%20python%29%20AND%20NOT%20agent&page=3
+  # - https://www.upwork.com/nx/search/jobs/?payment_verified=1&per_page=50&sort=recency&proposals=0-4&q=%28data%20python%29%20AND%20NOT%20agent&page=4
+
+  # data science python not LLM
+  # - https://www.upwork.com/nx/search/jobs/?payment_verified=1&per_page=50&sort=recency&page=1&q=%28data%20AND%20science%20AND%20python%29%20AND%20NOT%20LLM
+  # - https://www.upwork.com/nx/search/jobs/?payment_verified=1&per_page=50&sort=recency&page=2&q=%28data%20AND%20science%20AND%20python%29%20AND%20NOT%20LLM
+
+  # data science pythin not llm or agent
+  # - https://www.upwork.com/nx/search/jobs/?payment_verified=1&per_page=50&sort=recency&page=1&q=%28data%20AND%20science%20AND%20python%29%20AND%20NOT%20%28llm%20OR%20agent%29
+  # - https://www.upwork.com/nx/search/jobs/?payment_verified=1&per_page=50&sort=recency&page=2&q=%28data%20AND%20science%20AND%20python%29%20AND%20NOT%20%28llm%20OR%20agent%29
+
+
+# Commented out URLs will be ignored
+# - https://www.upwork.com

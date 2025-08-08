@@ -15,17 +15,33 @@ This project provides a streamlined workflow to extract job postings from manual
 
 ---
 
-## ⚙️ How It Works
+## ⚙️ Project Flow
+
+The project follows a two-part workflow: manual data capture followed by an automated processing pipeline.
+
+1.  **Manual Data Capture**: The user manually saves Upwork job search results as complete HTML files using the **WebScrapBook** browser extension.
+2.  **Automated Pipeline**: The `run-all` command executes a series of steps to extract, clean, store, and sync the data.
+
+The diagram below illustrates the end-to-end process:
 
 ```mermaid
 graph TD
-    A[1. Manual HTML Download<br>(from Upwork saved searches)] --> B(2. Run 'run-all' command);
-    B --> C{3. Automated Processing};
-    C --> D[Extracts Job Data];
-    C --> E[Cleans & Transforms Data];
-    C --> F[Archives to Supabase];
-    C --> G[Syncs with Airtable];
-    G --> H[4. Review in Airtable UI<br>(opens automatically)];
+    subgraph "Manual Step"
+        A[1 - Save Upwork Searches<br>as HTML via WebScrapBook];
+    end
+
+    subgraph "Automated Pipeline (run-all)"
+        B[2 - Extract Job Data];
+        C[3 - Clean & Transform];
+        D[4 - Archive to Supabase];
+        E[5 - Sync with Airtable];
+    end
+
+    subgraph "Review"
+        F[6 - Review in Airtable UI];
+    end
+
+    A --> B --> C --> D --> E --> F;
 ```
 
 ---
@@ -62,7 +78,7 @@ Follow these steps to get the project running.
 ### 2. Daily Workflow
 
 1.  **Download HTML Files:**
-    Open your saved searches on Upwork and save the HTML files into the correct daily folder, which is automatically created by the `WebScrapBook` browser extension. The path will be similar to:
+    Open your saved searches on Upwork and save the HTML files using the **WebScrapBook** browser extension. Files should be saved into a path similar to:
     `~/Downloads/WebScrapBook/Upwork/YYYY-MM-DD/`
 
 2.  **Run the Pipeline:**
@@ -79,10 +95,11 @@ Follow these steps to get the project running.
 | Layer | Choice |
 |---|---|
 | Language | Python 3.11 (Conda) |
-| Headless browser | Playwright |
-| Parsing | `json`, `pandas` |
-| Storage | Airtable (REST / `pyairtable`) |
-| Archive Storage | Supabase |
+| Data Capture | WebScrapBook (Browser Extension) |
+| Headless Automation | Playwright |
+| Data Parsing | `json`, `pandas` |
+| Data Storage | Postgres (via Supabase) |
+| Frontend / UI | Airtable |
 
 ---
 

@@ -55,7 +55,7 @@ upwork_scraper/
 ├── config/
 │   ├── airtable_schema.json # Defines the mapping between Supabase columns and Airtable fields.
 │   └── search_urls.yml      # A list of Upwork search URLs to be opened with the `open-urls` command.
-├── environment.yml          # Conda environment definition
+├── pyproject.toml           # uv project metadata and Python dependencies
 ├── pytest.ini               # Pytest configuration
 ├── README.md                # Project README
 ├── data/
@@ -101,20 +101,16 @@ To get the project up and running, follow these steps:
     cd upwork_scraper
     ```
 
-2.  **Create and Activate Conda Environment:**
+2.  **Create the `uv` Environment and Install Dependencies:**
     ```bash
-    conda env create -f environment.yml
-    conda activate upwork-scraper-env
+    uv sync
     ```
-    *Note: If you've previously set up the environment, ensure it's updated to include `pyyaml` and `playwright` async dependencies:*
-    ```bash
-    conda env update --file environment.yml
-    ```
+    This creates `.venv` from `pyproject.toml` and installs both runtime and development dependencies.
 
 3.  **Install Playwright Browsers:**
     Playwright requires browser binaries. Run this command to install them:
     ```bash
-    playwright install
+    uv run playwright install
     ```
 
 4.  **Configure Environment Variables:**
@@ -155,7 +151,7 @@ WebScrapBook allows you to save a complete, interactive version of a webpage, wh
 1.  **Open Search URLs:**
     *   Run the `open-urls` command to open your saved Upwork searches in Firefox:
         ```bash
-        python -m src.upwork_scraper.cli open-urls
+        uv run python -m src.upwork_scraper.cli open-urls
         ```
 
 2.  **Capture Tabs:**
@@ -338,7 +334,7 @@ Runs the full ETL workflow, from HTML extraction to Supabase loading and Airtabl
 
 *   **Usage:**
     ```bash
-    python -m src.upwork_scraper.cli run-all
+    uv run python -m src.upwork_scraper.cli run-all
     ```
 *   **Options:** None.
 
@@ -348,7 +344,7 @@ Opens a list of search URLs in new Firefox tabs. URLs are read from `config/sear
 
 *   **Usage:**
     ```bash
-    python -m src.upwork_scraper.cli open-urls
+    uv run python -m src.upwork_scraper.cli open-urls
     ```
 *   **Options:**
     *   `--file <path>`: Specify the path to the YAML file containing the URLs.
@@ -364,7 +360,7 @@ Deletes generated HTML files from the `raw_html` directory and JSON files from t
 
 *   **Usage:**
     ```bash
-    python -m src.upwork_scraper.cli cleanup
+    uv run python -m src.upwork_scraper.cli cleanup
     ```
 *   **Options:**
     *   `--raw_html_dir <path>`: Specify the directory containing raw HTML files to delete.

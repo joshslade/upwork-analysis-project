@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "upwork-scraper"
+version = "0.1.0"
+description = "Manual Upwork HTML processing pipeline with Supabase and Airtable sync."
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "beautifulsoup4>=4.13.4",
+    "numpy",
+    "pandas",
+    "playwright",
+    "pyairtable>=3.1.1",
+    "pydantic>=2.11.7",
+    "python-dotenv>=1.1.0",
+    "pyyaml",
+    "requests>=2.32.4",
+    "supabase",
+]
+
+[project.scripts]
+upwork-scraper = "upwork_scraper.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

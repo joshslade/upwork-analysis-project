@@ -58,15 +58,15 @@ Follow these steps to get the project running.
     cd upwork_scraper
     ```
 
-2.  **Create and Activate Conda Environment:**
+2.  **Create the `uv` Environment and Install Dependencies:**
     ```bash
-    conda env create -f environment.yml
-    conda activate upwork-scraper-env
+    uv sync
     ```
+    This creates `.venv` and installs the project plus dev dependencies from `pyproject.toml`.
 
 3.  **Install Playwright Browsers:**
     ```bash
-    playwright install
+    uv run playwright install
     ```
 
 4.  **Configure Environment Variables:**
@@ -84,7 +84,7 @@ Follow these steps to get the project running.
 2.  **Run the Pipeline:**
     Execute the main command to process the downloaded files, load the data into Supabase, and sync it with Airtable.
     ```bash
-    python -m src.upwork_scraper.cli run-all
+    uv run python -m src.upwork_scraper.cli run-all
     ```
     Your Airtable dashboard will open automatically in your browser upon completion.
 
@@ -94,7 +94,7 @@ Follow these steps to get the project running.
 
 | Layer | Choice |
 |---|---|
-| Language | Python 3.11 (Conda) |
+| Language | Python 3.11 (`uv`) |
 | Data Capture | WebScrapBook (Browser Extension) |
 | Headless Automation | Playwright |
 | Data Parsing | `json`, `pandas` |

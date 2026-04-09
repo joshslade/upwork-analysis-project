@@ -34,8 +34,7 @@
 # Clone and set up
 git clone https://github.com/<user>/upwork_scraper_airtable.git
 cd upwork_scraper_airtable
-conda env create -f environment.yml
-conda activate upwork-scraper
+uv sync
 
 # Configure secrets
 cp .env.example .env   # then edit with your keys

@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.pyc
+*.egg-info/
 
 # Conda
 .env
@@ -10,6 +11,7 @@ __pycache__/
 
 # Folders
 venv/
+.venv/
 data/
 
 .dbeaver/

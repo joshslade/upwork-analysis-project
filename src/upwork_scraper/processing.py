@@ -108,16 +108,16 @@ def flatten_record(record: Dict[str, Any]) -> Dict[str, Any]:
 
 def parse_filename_metadata(filepath: Path) -> Dict[str, Any]:
     """ Extracts searchID, query, and page from the filename.
-        Expected format: searchID-query-page.json
+        Expected format: searchID-query-page.json or searchID-query-pageN.json
     """
     filename = filepath.name
-    match = re.match(r"(.*?)-(.*?)-page(\d+)\.json", filename)
+    match = re.match(r"(.*?)-(.*?)-page(\d*)\.json", filename)
     if match:
         return {
             "search_id": match.group(1),
             "query_timestamp": datetime.strptime(match.group(1),r'%Y%m%d%H%M%S%f'),  
             "query": match.group(2),
-            "page": int(match.group(3)),
+            "page": int(match.group(3) or 1),
         }
     LOGGER.warning(f"Filename {filename} does not match expected pattern. Cannot extract metadata.")
     return {"search_id": None, "query_timestamp": None, "query": None, "page": None}
@@ -176,7 +176,8 @@ async def process_json_files(input_dir: Path) -> None:
             # 5. Push jobs to Supabase 'jobs' table
             # Replace NaN values with None for JSON compliance
        
-            jobs_to_push = df.replace({np.nan: None}).to_dict(orient='records')
+            clean_df = df.replace({np.nan: None})
+            jobs_to_push = clean_df.to_dict(orient='records')
             
             try:
                 await supabase.push_jobs_to_supabase(jobs_to_push, json_filepath.name)
@@ -187,9 +188,9 @@ async def process_json_files(input_dir: Path) -> None:
                 continue # Move to next file
 
             # 6. Push search results (job_id and proposals_tier) to Supabase 'search_results' table
-            job_ids = df["job_id"].tolist()
-            proposals_tiers = df["proposals_tier"].tolist()
-            is_applieds = df["is_applied"].tolist()
+            job_ids = clean_df["job_id"].tolist()
+            proposals_tiers = clean_df["proposals_tier"].tolist()
+            is_applieds = clean_df["is_applied"].tolist()
             await supabase.insert_search_results(search_id, job_ids, proposals_tiers, is_applieds)
 
             # 7. Update scrape request status to processed

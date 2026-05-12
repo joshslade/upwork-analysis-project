@@ -65,7 +65,7 @@ async def extract_from_single_file(html_path: Path, output_dir: Path, headless: 
         await browser.close()
 
 
-def open_urls_in_firefox(file_path: Path):
+def open_urls_in_firefox(file_path: Path, section: str):
     """Opens a list of URLs from a YAML file in new Firefox tabs."""
     try:
         browser = webbrowser.get('firefox')
@@ -75,7 +75,7 @@ def open_urls_in_firefox(file_path: Path):
 
     with open(file_path, 'r') as f:
         data = yaml.safe_load(f)
-        urls = data.get('urls', [])
+        urls = data.get('urls', {}).get(section, [])
 
     if not urls:
         LOGGER.warning(f"No URLs found in {file_path}")

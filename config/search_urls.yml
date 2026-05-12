@@ -1,5 +1,6 @@
 # Active search URLs
 urls:
+  section0:
   # data scientist python
   - https://www.upwork.com/nx/search/jobs/?payment_verified=1&per_page=50&sort=recency&q=data%20scientist%20python&page=1
   - https://www.upwork.com/nx/search/jobs/?payment_verified=1&per_page=50&sort=recency&q=data%20scientist%20python&page=2
@@ -22,3 +23,104 @@ urls:
 
 # Commented out URLs will be ignored
 # - https://www.upwork.com
+
+# ============================================================
+# Upwork Market Validation Scraper
+# Purpose: Collect data on verified-payment jobs across
+# three potential freelance niche directions:
+#  1. Data Automation & Business Intelligence
+#  2. Operations Optimization & Scenario Modeling
+#  3. AI-Augmented Reporting
+# ============================================================
+
+# urls:
+  # ============================================================
+  # 1. DATA AUTOMATION & BUSINESS INTELLIGENCE CONSULTANT
+  # Focus: Dashboards, data automation, integration, reporting
+  # ============================================================
+  section1:
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=data%20automation&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=data%20automation&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=data%20automation&page=3
+
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=automated%20reporting&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=automated%20reporting&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=automated%20reporting&page=3
+
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=data%20pipeline&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=data%20pipeline&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=data%20pipeline&page=3
+
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=dashboard%20automation&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=dashboard%20automation&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=dashboard%20automation&page=3
+
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=Streamlit%20app&page=1
+
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=Looker%20Studio%20dashboard&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=Looker%20Studio%20dashboard&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=Looker%20Studio%20dashboard&page=3
+
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=data%20visualization%20consultant&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=data%20visualization%20consultant&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=data%20visualization%20consultant&page=3
+
+
+  # ============================================================
+  # 2. OPERATIONS OPTIMIZATION & SCENARIO MODELING EXPERT
+  # Focus: Optimization, forecasting, decision modeling
+  # ============================================================
+  section2:
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=operations%20optimization&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=operations%20optimization&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=operations%20optimization&page=3
+
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=supply%20chain%20optimization&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=supply%20chain%20optimization&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=supply%20chain%20optimization&page=3
+
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=process%20optimization&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=process%20optimization&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=process%20optimization&page=3
+
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=forecasting%20model&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=forecasting%20model&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=forecasting%20model&page=3
+
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=predictive%20analytics&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=predictive%20analytics&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=predictive%20analytics&page=3
+
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=scenario%20modeling&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=scenario%20modeling&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=scenario%20modeling&page=3
+
+
+  # ============================================================
+  # 3. AI-AUGMENTED REPORTING & INSIGHT GENERATION SPECIALIST
+  # Focus: AI summarization, automated insights, GenAI integration
+  # ============================================================
+  section3:
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=AI%20report%20generation&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=AI%20report%20generation&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=AI%20report%20generation&page=3
+
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=automated%20insights&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=automated%20insights&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=automated%20insights&page=3
+
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=OpenAI%20API%20integration&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=OpenAI%20API%20integration&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=OpenAI%20API%20integration&page=3
+
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=LangChain%20developer&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=LangChain%20developer&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=LangChain%20developer&page=3
+
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=AI%20data%20analysis&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=AI%20data%20analysis&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=AI%20data%20analysis&page=3
+
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=text%20summary%20automation&page=1
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=text%20summary%20automation&page=2
+    - https://www.upwork.com/nx/search/jobs/?per_page=50&sort=recency&q=text%20summary%20automation&page=3
